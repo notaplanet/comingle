@@ -45,14 +45,14 @@ initModel = ->
       children: [
         id: 'roomsTab'
         type: 'tab'
-        name: "Meeting Rooms"
+        name: "Team Rooms"
         component: 'RoomList'
         enableClose: false
         enableDrag: false
       ,
         id: 'chat'
         type: 'tab'
-        name: "Meeting Chat"
+        name: "Team Chat"
         component: 'ChatRoom'
         enableClose: false
         enableDrag: false
@@ -222,7 +222,7 @@ export Meeting = React.memo ->
     parts.push room.title if room?.title
     document.title = parts.reverse().join ' - '
   , []
-  
+
   factory = (node) ->
     updateTab = -> FlexLayout.updateNode model, node.getId()
     switch node.getComponent()
@@ -230,7 +230,7 @@ export Meeting = React.memo ->
         <RoomList loading={loading} model={model}
          extraData={node.getExtraData()} updateTab={updateTab}/>
       when 'ChatRoom'
-        <ChatRoom channel={meetingId} audience="everyone"
+         <ChatRoom channel={Meetings.findOne(meetingId)?.chat or meetingId} audience="everyone"
          visible={node.isVisible()}
          extraData={node.getExtraData()} updateTab={updateTab}/>
       when 'Settings'

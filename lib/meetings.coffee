@@ -47,6 +47,9 @@ Meteor.methods
     check diff,
       id: String
       title: Match.Optional String
+      chat: Match.Optional String
+      slug: Match.Optional String
+      html: Match.Optional String
       defaultSort: Match.Optional {
         gather: Match.Optional String
         key: Match.Optional String
