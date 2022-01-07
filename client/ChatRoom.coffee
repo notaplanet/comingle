@@ -14,6 +14,9 @@ import {formatDate, formatTime} from './lib/dates'
 import {useLocalStorage} from './lib/useLocalStorage'
 
 export ChatRoom = ({channel, audience, visible, extraData, updateTab}) ->
+  if ///^https:// ///.test channel
+    return <iframe src={channel} allow="camera;microphone;geolocation;midi;encrypted-media;clipboard-write"></iframe>
+
   loading = useChat channel
   messages = useTracker ->
     Chat.find

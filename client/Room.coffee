@@ -229,7 +229,7 @@ export Room = React.memo ({loading, roomId, onClose, enableMaximize, maximized, 
           {config}
     switch node.getComponent()
       when 'ChatRoom'
-        <ChatRoom channel={roomId} audience="room"
+        <ChatRoom channel={room.tags?.chat or roomId} audience="room"
          visible={node.isVisible()} extraData={node.getExtraData()}
          updateTab={-> FlexLayout.updateNode model, node.getId()}/>
       when 'TabIFrame' then <TabIFrame tabId={node.getId()}/>
