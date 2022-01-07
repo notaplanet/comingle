@@ -7,41 +7,24 @@ import {useDark} from './Settings'
 import {Tabs} from '/lib/tabs'
 
 ###
-See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Feature-Policy
-This list of features to re-enable started from Chrome's disabled list:
+This list of features to re-enable starts from Chrome's disabled list:
 https://dev.chromium.org/Home/chromium-security/deprecating-permissions-in-cross-origin-iframes
 We also add the new Chrome feature `clipboard-write`
 [https://crbug.com/1074489 / https://github.com/w3c/clipboard-apis/pull/120]
 so that e.g. Cocreate has a working "copy link to clipboard" button.
 ###
 allowList = [
-  # Video conferencing e.g. Jitsi, Zoom
   "camera"
-  "display-capture"
   "microphone"
-  # Screen control e.g. YouTube
-  "fullscreen"
-  "wake-lock"
-  "screen-wake-lock"
-  # Sensors e.g. for games
-  "accelerometer"
   "geolocation"
-  "gyroscrope"
-  "magnetometer"
-  # Mobile
-  "battery"
-  "web-share"
-  # Misc
-  "clipboard-write" # Cocreate
-  "encrypted-media"
   "midi"
+  "encrypted-media"
+  "clipboard-write"
 ]
 export allow = allowList.join ';'
 
-export TabIFrame = React.memo ({tabId}) ->
-  tab = useTracker ->
-    Tabs.findOne tabId
-  , [tabId]
+export TabIFrame = ({tabId}) ->
+  tab = useTracker -> Tabs.findOne tabId
   return null unless tab
   ref = useRef()
 
@@ -50,7 +33,6 @@ export TabIFrame = React.memo ({tabId}) ->
   dark = useDark()
   [coop, setCoop] = useState 0
   useEventListener 'message', (e) ->
-    return unless ref.current
     return unless e.source == ref.current.contentWindow
     return unless e.data?.coop
     setCoop coop + 1  # force update
@@ -64,7 +46,10 @@ export TabIFrame = React.memo ({tabId}) ->
     , '*'
     undefined
   , [ref, name, dark, coop]
-
-  <iframe ref={ref} src={tab.url} allow={allow}/>
+  url = tab.url.replace /^http:/, "https:"
+  if /\.pdf/.test(url)
+    <embed ref={ref} id={tabId} src={url} width="100%" height="100%"/>
+  else
+    <iframe ref={ref} id={tabId} src={url} allow={allow}/>
 
 TabIFrame.displayName = 'TabIFrame'

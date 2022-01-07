@@ -3,7 +3,7 @@ import {Alert} from 'react-bootstrap'
 
 import {useAsync} from './lib/useAsync'
 
-export Warnings = React.memo ->
+export Warnings = ->
   [warnings, updateWarning] = useReducer (warnings, op) ->
     warnings = Object.assign {}, warnings
     switch op.op
@@ -23,13 +23,13 @@ export Warnings = React.memo ->
       when 'Safari'
         browserWarning =
           "Comingle and Jitsi do not run well in #{browser}."
-      #when 'Firefox'
-      #  browserWarning =
-      #    <span>Firefox <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1401592">does not support Simulcast</a> so it does not work well with Jitsi calls; even if it works for you, it may slow down everyone else.</span>
+      when 'Firefox'
+        browserWarning =
+          <span>Firefox <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1401592">does not support Simulcast</a> so it does not work well with Jitsi calls; even if it works for you, it may slow down everyone else.</span>
     if browserWarning?
       updateWarning
         op: 'add'
-        id: 'browser'
+        id: 'safari'
         body: <>{browserWarning} We recommend switching to Chrome.</>
   , [UAParser]
   for id, warning of warnings

@@ -13,59 +13,7 @@ export defaultGlobal =
 
 titleLimit = 20
 
-export icons = (tabPhrase) ->
-  close:
-    <OverlayTrigger placement="bottom" overlay={(props) ->
-      if tabPhrase == 'room'
-        <Tooltip {props...}>
-          Leave Room
-          <div className="small">
-            You can always rejoin by selecting the room from the list on the left.
-          </div>
-        </Tooltip>
-      else
-        <Tooltip {props...}>Close New Tab</Tooltip>
-    }>
-      <FontAwesomeIcon icon={faTimes} aria-label="Close New Tab"/>
-    </OverlayTrigger>
-  maximize:
-    <OverlayTrigger placement="bottom" overlay={(props) ->
-      <Tooltip {props...}>
-        Maximize This {capitalize tabPhrase}
-        <div className="small">
-          Temporarily hide all other {tabPhrase}s to focus on this one.
-        </div>
-      </Tooltip>
-    }>
-      <FontAwesomeIcon icon={faExpandArrowsAlt}
-      aria-label="Maximize This #{capitalize tabPhrase}"/>
-    </OverlayTrigger>
-  restore:
-    <OverlayTrigger placement="bottom" overlay={(props) ->
-      <Tooltip {props...}>
-        Unmaximize This {capitalize tabPhrase}
-        <div className="small">
-          Restore all other {tabPhrase}s.
-        </div>
-      </Tooltip>
-    }>
-      <FontAwesomeIcon icon={faCompressArrowsAlt}
-      aria-label="Unmaximize This #{capitalize tabPhrase}"/>
-    </OverlayTrigger>
-  more:
-    <OverlayTrigger placement="bottom" overlay={(props) ->
-      <Tooltip {props...}>
-        Overflow {capitalize tabPhrase}s
-        <div className="small">
-          Some additional {tabPhrase}s are off-screen because of the limited width. Use this button to choose from a pop-up list, or scroll the {tabPhrase} bar.
-        </div>
-      </Tooltip>
-    }>
-      <FontAwesomeIcon icon={faWindowRestore} width="12px"
-      aria-label="Overflow #{capitalize tabPhrase}s"/>
-    </OverlayTrigger>
-
-export Layout = React.memo forwardRef ({tabPhrase, ...props}, ref) ->
+export Layout = forwardRef (props, ref) ->
   ## Shorten titles that are longer than titleLimit.
   titleFactory = (node) ->
     title = node.getName()
@@ -88,7 +36,50 @@ export Layout = React.memo forwardRef ({tabPhrase, ...props}, ref) ->
    titleFactory={titleFactory}
    onModelChange={onModelChange}
    ref={ref}
-   icons={icons tabPhrase}
+   icons={
+     close:
+       <OverlayTrigger placement="bottom" overlay={(tipProps) ->
+         if props.tabPhrase == 'room'
+           <Tooltip {tipProps...}>
+             Leave Room<br/>
+             <small>You can always rejoin by selecting the room from the list on the left.</small>
+           </Tooltip>
+         else
+           <Tooltip {tipProps...}>Close New Tab</Tooltip>
+       }>
+         <FontAwesomeIcon icon={faTimes} aria-label="Close New Tab"/>
+       </OverlayTrigger>
+     maximize:
+       <OverlayTrigger placement="bottom" overlay={(tipProps) ->
+         <Tooltip {tipProps...}>
+           Maximize This {capitalize props.tabPhrase}<br/>
+           <small>Temporarily hide all other {props.tabPhrase}s to focus on this one.</small>
+         </Tooltip>
+       }>
+         <FontAwesomeIcon icon={faExpandArrowsAlt}
+          aria-label="Maximize This #{capitalize props.tabPhrase}"/>
+       </OverlayTrigger>
+     restore:
+       <OverlayTrigger placement="bottom" overlay={(tipProps) ->
+         <Tooltip {tipProps...}>
+           Unmaximize This {capitalize props.tabPhrase}<br/>
+           <small>Restore all other {props.tabPhrase}s.</small>
+         </Tooltip>
+       }>
+         <FontAwesomeIcon icon={faCompressArrowsAlt}
+          aria-label="Unmaximize This #{capitalize props.tabPhrase}"/>
+       </OverlayTrigger>
+     more:
+       <OverlayTrigger placement="bottom" overlay={(tipProps) ->
+         <Tooltip {tipProps...}>
+           Overflow {capitalize props.tabPhrase}s<br/>
+           <small>Some additional {props.tabPhrase}s are hiding here because of the limited width.<br/>Select to see the list.</small>
+         </Tooltip>
+       }>
+         <FontAwesomeIcon icon={faWindowRestore} width="12px"
+          aria-label="Overflow #{capitalize props.tabPhrase}s"/>
+       </OverlayTrigger>
+   }
    i18nMapper={(label) -> switch label
      when 'Close', 'Maximize', 'Restore' then null}
   />

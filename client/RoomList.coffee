@@ -2,85 +2,60 @@ import React, {useState, useMemo, useContext, useRef, useCallback, useEffect} fr
 import useInterval from '@use-it/interval'
 import {Link, useParams} from 'react-router-dom'
 import {Accordion, Alert, Badge, Button, ButtonGroup, Card, Dropdown, DropdownButton, Form, ListGroup, SplitButton, Tooltip, OverlayTrigger} from 'react-bootstrap'
+import SelectableContext from 'react-bootstrap/SelectableContext'
 import {useTracker} from 'meteor/react-meteor-data'
 import {Session} from 'meteor/session'
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faDoorOpen, faHourglass, faUser, faUserTie, faHandPaper, faSortAlphaDown, faSortAlphaDownAlt, faStar, faTimes, faTimesCircle, faTrash, faTrashRestore} from '@fortawesome/free-solid-svg-icons'
-import {faClone, faHandPaper as faHandPaperOutline, faStar as faStarOutline} from '@fortawesome/free-regular-svg-icons'
+import {faThumbtack, faDoorOpen, faUser, faHandPaper, faSortAlphaDown, faSortAlphaDownAlt, faTimes, faTimesCircle} from '@fortawesome/free-solid-svg-icons'
+import {faClone} from '@fortawesome/free-regular-svg-icons'
 
 import FlexLayout from './FlexLayout'
-import {Rooms, roomDuplicate} from '/lib/rooms'
+import {Rooms, roomWithTemplate, roomDuplicate} from '/lib/rooms'
 import {Presence} from '/lib/presence'
-import {CardToggle} from './CardToggle'
-import {Header} from './Header'
-import {Highlight} from './Highlight'
 import {Loading} from './Loading'
+import {Header} from './Header'
 import {MeetingContext} from './Meeting'
-import {useMeetingAdmin} from './MeetingSecret'
+import {MeetingTitle} from './MeetingTitle'
 import {Name} from './Name'
-import {useAdminVisit} from './Settings'
 import {Warnings} from './Warnings'
-import {getPresenceId, getUpdator} from './lib/presenceId'
+import {CardToggle} from './CardToggle'
+import {Highlight} from './Highlight'
+import {getPresenceId, getCreator} from './lib/presenceId'
 import {formatTimeDelta, formatDateTime} from './lib/dates'
 import timesync from './lib/timesync'
 import {useDebounce} from './lib/useDebounce'
 import {Meetings} from '/lib/meetings'
-import {meteorCallPromise} from '/lib/meteorPromise'
 import {sortByKey, titleKey, sortNames, uniqCountNames} from '/lib/sort'
 import {Config} from '/Config'
+import {getCompact} from './Settings'
+import {getCreateable} from './Settings'
 
 findMyPresence = (presence) ->
-  myPresence = {}
   presenceId = getPresenceId()
-  for type, presenceList of presence
-    if (me = presenceList?.find (p) -> p.id == presenceId)?
-      myPresence[type] = me
-  myPresence
+  presence?.find (p) -> p.id == presenceId
 
-sortKeys = (admin) ->
-  map =
-    title: 'Title'
-    created: 'Creation time'
-    participants: 'Participant count'
-    starred: 'Star count'
-    raised: 'Raised hand timer'
-  if admin
-    Object.assign map,
-      adminVisit: 'Last admin visit'
-  map
+sortKeys =
+  title: 'Title'
+  created: 'Creation time'
+  participants: 'Participant count'
+  raised: 'Raised hand timer'
 
 defaultSort = Config.defaultSort ?
   key: 'title'
   reverse: false
 
-tagClass = (key, value) ->
-  "tag-" + key + "-" + value
-
-export RoomList = React.memo ({loading, model, extraData, updateTab}) ->
+export RoomList = ({loading, model, extraData, updateTab}) ->
   {meetingId} = useParams()
-  admin = useMeetingAdmin()
   [sortKey, setSortKey] = useState null  # null means "use default"
   [reverse, setReverse] = useState null  # null means "use default"
-  [gatherTag, setGatherTag] = useState null  # null means "use default"
-  meeting = useTracker ->
-    Meetings.findOne meetingId
-  , [meetingId]
+  meeting = useTracker -> Meetings.findOne meetingId
   sortKey ?= meeting?.defaultSort?.key ? defaultSort.key
   reverse ?= meeting?.defaultSort?.reverse ? defaultSort.reverse
-  gatherTag ?= meeting?.defaultSort?.gather ? defaultSort.gather
   [search, setSearch] = useState ''
   searchDebounce = useDebounce search, 200
   [nonempty, setNonempty] = useState false
   [selected, setSelected] = useState()
-  rooms = useTracker ->
-    Rooms.find(meeting: meetingId).fetch()
-  , [meetingId]
-  if gatherTag
-    halls = (item.tags?[gatherTag] for item in rooms when item.tags?[gatherTag]).filter((value, index, array) ->
-      array.indexOf(value, index + 1) < 0
-    ) # Get list of unique values for tags key gatherTag
-  else
-    halls = []
+  rooms = useTracker -> Rooms.find(meeting: meetingId).fetch()
   useEffect ->
     raisedCount = 0
     for room in rooms
@@ -89,54 +64,50 @@ export RoomList = React.memo ({loading, model, extraData, updateTab}) ->
       extraData.raisedCount = raisedCount
       updateTab()
   , [rooms]
-  presences = useTracker ->
-    Presence.find meeting: meetingId
-    .fetch()
-  , [meetingId]
+  presences = useTracker -> Presence.find(meeting: meetingId).fetch()
   presenceByRoom = useMemo ->
     byRoom = {}
     for presence in presences
-      match = searchMatches search, presence.name if search
-      for type, presenceList of presence.rooms
-        for room in presenceList
-          byRoom[room] ?= {}
-          byRoom[room][type] ?= []
-          byRoom[room][type].push
+      for type in ['visible', 'invisible']
+        for room in presence.rooms[type]
+          byRoom[room] ?= []
+          byRoom[room].push
             type: type
             name: presence.name
-            admin: presence.admin
             id: presence.id
-            match: match
     byRoom
-  , [presences, search]
-  hasJoined = (room) ->
-    presenceByRoom[room._id ? room]?.joined?.length
+  , [presences]
+  hasVisible = (room) ->
+    presences = presenceByRoom[room._id ? room]
+    return false unless presences?
+    for presence in presences
+      return true if presence.type == 'visible'
+    true
   sorters =
     title: titleKey
     created: (room) -> room.created
     participants: (room) ->
-      titleKey "#{presenceByRoom[room._id]?.joined?.length ? 0}.#{room.title}"
-    starred: (room) ->
-      titleKey "#{presenceByRoom[room._id]?.starred?.length ? 0}.#{room.title}"
+      titleKey "#{presenceByRoom[room._id]?.length ? 0}.#{room.title}"
     raised: (room) ->
-      if (raised = room.raised)
+      if raised = room.raised
         ## room.raised will briefly be true instead of a time
         raised = new Date if typeof raised == 'boolean'
         -raised.getTime()
       else
         -Infinity
-    adminVisit: (room) ->
-      adminVisit = room.adminVisit
-      if adminVisit instanceof Date
-        -adminVisit.getTime()
-      else
-        -Infinity
+  pinnedSort = (sorter) ->
+     (room) -> 
+        (room.tags?.pinned or "_") + sorter(room)
   sortedRooms = useMemo ->
-    sorted = sortByKey rooms[..], sorters[sortKey]
+    sorted = sortByKey rooms[..], pinnedSort(sorters[sortKey])
     sorted.reverse() if reverse
     sorted
-  , [rooms, sortKey, reverse,
-     (presenceByRoom if sortKey in ['participants', 'starred'])]
+  , [rooms, sortKey, reverse, if sortKey == 'participants' then presenceByRoom]
+  sortedHalls = useMemo ->
+    (item.tags?.hall for item in sortedRooms when item.tags?.hall?).filter( (value, index, array) ->
+      array.indexOf(value, index + 1) < 0
+    )
+  , [sortedRooms]
   roomList = useRef()
   selectRoom = useCallback (id, scroll) ->
     setSelected id
@@ -149,53 +120,22 @@ export RoomList = React.memo ({loading, model, extraData, updateTab}) ->
           block: 'nearest'
       , 0
   , []
-  onKeyDown = useCallback (e) ->
-    if e.key == 'Escape'
-      e.preventDefault()
-      e.stopPropagation()
-      setSelected null
-  , []
-  {updateStarred, starredOld, starredHasOld} = useContext MeetingContext
-  clearStars = useCallback ->
-    updateStarred []
-  , [updateStarred]
 
-  <div className="d-flex flex-column h-100 RoomList" onKeyDown={onKeyDown}>
-    <div className="sidebar flex-grow-1 overflow-auto pb-2" ref={roomList}>
-      <Header/>
-      <Warnings/>
-      <Name/>
-      {if starredHasOld
-        <Alert variant="info" dismissible onClose={-> updateStarred()}>
-          <p>
-            Restore your
-            {' '}
-            <OverlayTrigger placement="right" flip overlay={(props) ->
-              <Tooltip {...props}>
-                {for id in starredOld
-                  <span key={id} className="mr-2">
-                    <FontAwesomeIcon className="mr-1" icon={faDoorOpen}/>
-                    {Rooms.findOne(id)?.title ? id}
-                  </span>
-                }
-              </Tooltip>
-            }>
-              <span className="text-help">old starred rooms</span>
-            </OverlayTrigger>
-            ?
-          </p>
-          <div className="text-center">
-            <ButtonGroup>
-              <Button variant="success" onClick={-> updateStarred starredOld}>
-                Yes
-              </Button>
-              <Button variant="danger" onClick={-> updateStarred()}>
-                No
-              </Button>
-            </ButtonGroup>
-          </div>
-        </Alert>
+  # SelectableContext below is workaround until release of:
+  # https://github.com/react-bootstrap/react-bootstrap/pull/5201
+
+  <div className="d-flex flex-column h-100">
+    <div className="RoomList flex-grow-1 overflow-auto pb-2" ref={roomList}>
+      {if not Config.hideHeader
+          <Header/>
       }
+      {if not Config.hideWarnings
+          <Warnings/>
+      }
+      {if not Config.hideHeader
+          <MeetingTitle/>
+      }
+      <Name/>
       {if rooms.length > 0
         <Accordion>
           <Card>
@@ -203,6 +143,7 @@ export RoomList = React.memo ({loading, model, extraData, updateTab}) ->
               Room Search:
             </CardToggle>
             <Accordion.Collapse eventKey="0">
+             <SelectableContext.Provider value={null}>
               <Card.Body>
                 <FontAwesomeIcon icon={faTimesCircle} className="search-icon"
                  onClick={(e) -> e.stopPropagation(); setSearch ''}/>
@@ -210,7 +151,7 @@ export RoomList = React.memo ({loading, model, extraData, updateTab}) ->
                  onChange={(e) -> setSearch e.target.value}/>
                 <ButtonGroup size="sm" className="sorting w-100 text-center">
                   <DropdownButton title="Sort By" variant="light">
-                    {for key, phrase of sortKeys admin
+                    {for key, phrase of sortKeys
                       <Dropdown.Item key={key} active={key == sortKey}
                        onClick={do (key) -> (e) -> e.stopPropagation(); e.preventDefault(); setSortKey key}>
                         {phrase}
@@ -245,6 +186,7 @@ export RoomList = React.memo ({loading, model, extraData, updateTab}) ->
                    onChange={(e) -> setNonempty e.target.checked}/>
                 </Form.Group>
               </Card.Body>
+             </SelectableContext.Provider>
             </Accordion.Collapse>
           </Card>
         </Accordion>
@@ -257,112 +199,69 @@ export RoomList = React.memo ({loading, model, extraData, updateTab}) ->
           No rooms in this meeting.
         </Alert>
       }
+      {if not Config.hideOpenRooms
+          <Sublist {...{sortedRooms, presenceByRoom, selected, selectRoom, model}}
+           heading="Your Open Rooms:" search={searchDebounce}
+           filter={(room) -> findMyPresence presenceByRoom[room._id]}/>
+      }
       <Sublist {...{sortedRooms, presenceByRoom, selected, selectRoom, model}}
-       heading="Your Starred Rooms:" startClosed search={searchDebounce}
-       filter={(room) -> findMyPresence(presenceByRoom[room._id]).starred}
-       className="starred">
-        <OverlayTrigger placement="top" overlay={(props) ->
-          <Tooltip {...props}>
-            Unstar all rooms
-          </Tooltip>
-        }>
-          <div className="text-center">
-            <Button size="sm" variant="outline-warning" onClick={clearStars}>
-              Clear Stars
-            </Button>
-          </div>
-        </OverlayTrigger>
-      </Sublist>
-      <Sublist {...{sortedRooms, presenceByRoom, selected, selectRoom, model}}
-       heading="Available Rooms:" search={searchDebounce} className="available"
+       heading="Available Rooms:" search={searchDebounce}
        filter={(room) -> not room.archived and
-                         not room.tags?[gatherTag] and
-                         (not nonempty or hasJoined(room) or selected == room._id)}/>
-      {for hall in halls
-        filt = (t) =>
+                         not room.tags?.hall? and
+                         (not nonempty or hasVisible(room) or selected == room._id) and
+                         (Config.hideOpenRooms or not findMyPresence presenceByRoom[room._id])}/>
+      {for tag in sortedHalls ? []
+        filt = (t) -> 
           (room) -> not room.archived and
-                        (room.tags?[gatherTag] == t) and
-                        (not nonempty or hasJoined(room) or selected == room._id)
+                    (room.tags?.hall == t) and
+                    (not nonempty or hasVisible(room) or selected == room._id) and
+                    (Config.hideOpenRooms or not findMyPresence presenceByRoom[room._id])
         <Sublist {...{sortedRooms, presenceByRoom, selected, selectRoom, model}}
-         heading={hall} key={hall} search={searchDebounce}
-         className={"available " + tagClass(gatherTag,hall)}
-         filter={filt(hall)}/>
+        heading={tag} key={tag} search={searchDebounce}
+        filter={filt(tag)}/>
       }
       <Sublist {...{sortedRooms, presenceByRoom, selected, selectRoom, model}}
        heading="Archived Rooms:" startClosed search={searchDebounce}
-       className="archived"
        filter={(room) -> room.archived and
-                         (not nonempty or hasJoined(room) or selected == room._id)}/>
+                         (not nonempty or hasVisible(room) or selected == room._id) and
+                         (Config.hideOpenRooms or not findMyPresence presenceByRoom[room._id])}/>
     </div>
-    <RoomNew selectRoom={selectRoom}/>
+    {if getCreateable() 
+      <RoomNew selectRoom={selectRoom}/>
+    }
   </div>
 RoomList.displayName = 'RoomList'
 
-RoomList.onRenderTab = (node, renderState) ->
-  if (raisedCount = node.getExtraData().raisedCount)
-    help = "#{raisedCount} raised hand#{if raisedCount > 1 then 's' else ''}"
-    hand = null
-    showHand = (e) ->
-      e.preventDefault()
-      e.stopPropagation()
-      hands = document.querySelectorAll '.RoomList .accordion:not(.starred) .raise-hand.active'
-      hands = (elt for elt in hands)  # convert to Array
-      return unless hands.length
-      index = hands.indexOf hand
-      hand = hands[(index + 1) % hands.length]
-      hand.parentNode.scrollIntoView
-        behavior: 'smooth'
-    renderState.buttons.push \
-      <OverlayTrigger key="handCount" placement="right" overlay={(props) ->
-        <Tooltip {...props}>{help}</Tooltip>
-      }>
-        <Badge variant="danger" className="ml-1 hand-count" onClick={showHand}
-         onMouseDown={(e) -> e.stopPropagation()}
-         onTouchStart={(e) -> e.stopPropagation()}>
-          {raisedCount}
-          <FontAwesomeIcon aria-label={help} icon={faHandPaper} className="ml-1"/>
-        </Badge>
-      </OverlayTrigger>
-
-searchMatches = (search, text) ->
-  0 <= text.toLowerCase().indexOf search.toLowerCase()
-
-Sublist = React.memo ({sortedRooms, presenceByRoom, selected, selectRoom, model, heading, search, filter, startClosed, children, className}) ->
+Sublist = ({sortedRooms, presenceByRoom, selected, selectRoom, model, heading, search, filter, startClosed}) -> # eslint-disable-line react/display-name
   subrooms = useMemo ->
     matching = sortedRooms.filter filter
     if search
+      pattern = search.toLowerCase()
+      match = (x) -> 0 <= x.toLowerCase().indexOf pattern
       matching = matching.filter (room) ->
-        include = searchMatches search, room.title
-        for type, presenceList of presenceByRoom[room._id] ? {}
-          for presence in presenceList
-            include or= presence.match
+        include = match room.title
+        for presence in presenceByRoom[room._id] ? []
+          include or= presence.match = match presence.name
         include
     matching
   , [sortedRooms, filter, search, (if search then presenceByRoom)]
   return null unless subrooms.length
-
-  <Accordion defaultActiveKey={unless startClosed then '0'}
-   className={className}>
+  <Accordion defaultActiveKey={unless startClosed then '0'}>
     <Card>
       <CardToggle eventKey="0">
         {heading}
-        {' '}
-        <Badge pill variant={if subrooms.length then 'info' else 'secondary'}>
-          {subrooms.length}
-        </Badge>
       </CardToggle>
       <Accordion.Collapse eventKey="0">
         <Card.Body>
-          {children}
           <ListGroup>
             {for room in subrooms
               do (id = room._id) ->
                 <RoomInfo key={room._id} room={room} search={search}
-                 presence={presenceByRoom[room._id] ? {}}
+                 presence={presenceByRoom[room._id] ? []}
                  selected={selected == room._id}
                  selectRoom={selectRoom}
-                 leave={->
-                   model.doAction FlexLayout.Actions.deleteTab id}
+                 leave={(toleave = id) ->
+                   model.doAction FlexLayout.Actions.deleteTab toleave}
                 />
             }
           </ListGroup>
@@ -372,43 +271,77 @@ Sublist = React.memo ({sortedRooms, presenceByRoom, selected, selectRoom, model,
   </Accordion>
 Sublist.displayName = 'Sublist'
 
-export RoomInfo = React.memo ({room, search, presence, selected, selectRoom, leave}) ->
+RoomList.onRenderTab = (node, renderState) ->
+  if raisedCount = node.getExtraData().raisedCount
+    help = "#{raisedCount} raised hand#{if raisedCount > 1 then 's' else ''}"
+    hand = null
+    showHand = (e) ->
+      e.preventDefault()
+      e.stopPropagation()
+      hands = (elt for elt in document.querySelectorAll '.RoomList .raise-hand.active')
+      return unless hands.length
+      index = hands.indexOf hand
+      hand = hands[(index + 1) % hands.length]
+      hand.scrollIntoView
+        behavior: 'smooth'
+    renderState.buttons.push \
+      <OverlayTrigger key="handCount" placement="right" overlay={(props) ->
+        <Tooltip {...props}>{help}</Tooltip>
+      }>
+        <Badge variant="danger" className="ml-1 hand-count" onClick={showHand}
+         onMouseDown={(e) -> e.stopPropagation()}
+         onTouchStart={(e) -> e.stopPropagation()}>
+          <FontAwesomeIcon aria-label={help} icon={faHandPaper} className="mr-1"/>
+          {raisedCount}
+        </Badge>
+      </OverlayTrigger>
+
+export RoomInfo = ({room, search, presence, selected, selectRoom, leave}) ->
   {meetingId} = useParams()
-  admin = useMeetingAdmin()
-  {openRoom, openRoomWithDragAndDrop, starred, updateStarred} = useContext MeetingContext
+  {openRoom, openRoomWithDragAndDrop} = useContext MeetingContext
   link = useRef()
-  {myPresence, presenceClusters} = useMemo ->
-    clusters = {}
-    emptyCount = 0
-    for type, presenceList of presence
-      sortNames presenceList, (p) -> p.name
-      clusters[type] = uniqCountNames presenceList, ((p) -> p.name),
-        (p) -> emptyCount++ unless p.name?.trim()
-    myPresence: findMyPresence presence
-    presenceClusters: clusters
-  , [presence]
+  myPresence = findMyPresence presence
+  clusters = sortNames presence, (p) -> p.name
+  clusters = uniqCountNames presence, ((p) -> p.name), (p) -> p.type
   roomInfoClass = ''
-  roomInfoClass += " presence-#{type}" for type of myPresence
+  roomInfoClass += " presence-#{myPresence.type}" if myPresence
   roomInfoClass += " selected" if selected
   roomInfoClass += " archived" if room.archived
-  adminVisit = useAdminVisit()
+  roomInfoClass += " compact" if getCompact()
+  presenceCount = {}
+  for person in presence
+    presenceCount[person.type] ?= 0
+    presenceCount[person.type]++
 
   onClick = (force) -> (e) ->
     e.preventDefault()
     e.stopPropagation()
     currentRoom = Session.get 'currentRoom'
-    ## Open room with focus in the following cases:
-    ##   * We're not in any rooms
-    ##   * Shift/Ctrl/Meta-click => force open
-    ##   * We clicked on the Switch button (force == true)
-    if not currentRoom? or e.shiftKey or e.ctrlKey or e.metaKey or force == true
-      openRoom room._id
+    ## Toggle whether this room is selected if:
+    ##   * We are in this room, or
+    ##   * We are in any other room and force is neither true nor false and 
+    ##     * Config.defaultSwitchRoom is true and Shift is pressed 
+    ##     * Config.defaultSwitchRoom is not true and no modifiers are pressed 
+    if ((currentRoom == room._id) or 
+        (currentRoom? and force != true and force != false and 
+            ((Config.defaultSwitchRoom and e.shiftKey) or 
+            not (Config.defaultSwitchRoom or e.shiftKey or e.ctrlKey or e.metaKey))))
+      if selected
+          selectRoom null 
+      else 
+          selectRoom room._id
+    ## Open room as background tab (without focusing) in the following cases:
+    ##   * Ctrl/Command-click => force open as background tab
+    ##   * We clicked on the Join In Background button (force == false)
+    else if e.ctrlKey or e.metaKey or force == false
+      openRoom room._id, false
       selectRoom null
-    ## Otherwise, toggle whether this room is selected.
-    else if selected
-      selectRoom null
+    ## Otherwise open room with focus 
     else
-      selectRoom room._id
+      if Config.singleRoom
+          leave(currentRoom)
+      openRoom room._id, true
+      selectRoom null
   onLeave = (e) ->
     e.preventDefault()
     e.stopPropagation()
@@ -417,58 +350,68 @@ export RoomInfo = React.memo ({room, search, presence, selected, selectRoom, lea
   onSplit = (e) ->
     e.preventDefault()
     e.stopPropagation()
-    newRoom = await roomDuplicate room, getUpdator()
-    #openRoom newRoom
-    selectRoom newRoom._id, false
-  onArchive = (e) ->
-    e.preventDefault()
-    e.stopPropagation()
-    await meteorCallPromise 'roomEdit',
-      id: room._id
-      archived: not room.archived
-      updator: getUpdator()
-    selectRoom room._id, true
+    newRoom = await roomDuplicate room, getCreator()
+    openRoom newRoom, false
+    selectRoom newRoom, false
   onDragStart = (e) ->
     e.preventDefault()
     e.stopPropagation()
-    openRoomWithDragAndDrop room._id, 'Open'
-  toggleStar = (e) ->
-    e.preventDefault()
-    e.stopPropagation()
-    if starred.includes room._id
-      updateStarred (star for star in starred when star != room._id)
-    else
-      updateStarred starred.concat [room._id]
-  tagClasses = (tagClass(k,v) for k,v of room.tags when v).join(' ')
+    openRoomWithDragAndDrop(room._id)
 
-  <Link ref={link} to="/m/#{meetingId}##{room._id}"
-   onClick={onClick()} onDragStart={onDragStart}
-   className={"list-group-item list-group-item-action room-info#{roomInfoClass} " + tagClasses}
+  PresenceList = ({clusters, filter, search}) -> # eslint-disable-line react/display-name
+    return null unless clusters?.length
+    clusters = clusters.filter filter if filter
+    <div className="presence">
+      {for person in clusters
+        <span key={person.item.id} className="presence-#{person.item.type}">
+          <FontAwesomeIcon icon={faUser}/>
+          <Highlight search={search} text={person.name}/>
+          {if person.count > 1
+            <span className="ml-1 badge badge-secondary">{person.count}</span>
+          }
+        </span>
+      }
+    </div>
+  PresenceList.displayName = 'PresenceList'
+
+  <Link ref={link} to="/m/#{meetingId}##{room._id}" onClick={onClick()} onDragStart={onDragStart}
+   className="list-group-item list-group-item-action room-info#{roomInfoClass}"
    data-room={room._id}>
     <div className="presence-count">
-      <PresenceCount type="starred" presenceClusters={presenceClusters.starred}
-       onClick={toggleStar}
-       heading={<b>{if myPresence.starred then 'Unstar' else 'Star'} This Room</b>}>
-        {if myPresence.starred
-          <FontAwesomeIcon icon={faStar}/>
-        else
-          <FontAwesomeIcon icon={faStarOutline}/>
-        }
-      </PresenceCount>
+      {for kind in [
+         type: 'invisible'
+         variant: 'secondary'
+         singular: 'person has this room open in the background'
+         plural: 'people have this room open in the background'
+       ,
+         type: 'visible'
+         variant: 'primary'
+         singular: 'person is in this room'
+         plural: 'people are in this room'
+       ]
+         continue unless presenceCount[kind.type]
+         <OverlayTrigger key={kind.type} placement="top"
+          overlay={do (kind) -> (props) -> # eslint-disable-line react/display-name
+            <Tooltip {...props}>
+              {presenceCount[kind.type]} {if presenceCount[kind.type] == 1 then kind.singular else kind.plural}:
+              <PresenceList clusters={clusters}
+               filter={(person) -> person.item.type == kind.type}/>
+            </Tooltip>
+          }>
+           <span className="presence-#{kind.type}"
+            aria-label="#{presenceCount[kind.type]} #{if presenceCount[kind.type] == 1 then kind.singular else kind.plural}">
+             <FontAwesomeIcon icon={faUser}/>
+             {presenceCount[kind.type]}
+           </span>
+         </OverlayTrigger>
+      }
     </div>
-    {if presence.joined?.length
-      <div className="presence-count">
-        <PresenceCount type="joined" presenceClusters={presenceClusters.joined}>
-          <FontAwesomeIcon icon={faUser}/>
-        </PresenceCount>
-      </div>
-    }
-    {if room.raised or myPresence.joined
+    {if room.raised or myPresence?.type == 'visible'
       if room.raised
         label = 'Lower Hand'
         help =
           <>
-            {if myPresence.joined
+            {if myPresence?.type == 'visible'
               <><b>Lower Hand</b><br/></>
             }
             raised by {room.raiser?.name ? 'unknown'}<br/>
@@ -481,87 +424,60 @@ export RoomInfo = React.memo ({room, search, presence, selected, selectRoom, lea
         e.preventDefault()
         e.stopPropagation()
         ## Allow toggling hand only if actively in room
-        return unless myPresence.joined
+        return unless myPresence?.type == 'visible'
         Meteor.call 'roomEdit',
           id: room._id
           raised: not room.raised
-          updator: getUpdator()
-      <OverlayTrigger placement="top" overlay={(props) ->
-        <Tooltip {...props}>{help}</Tooltip>
-      }>
-        <div className="raise-hand #{if room.raised then 'active' else ''}">
-          {if room.raised instanceof Date
-            <Timer since={room.raised}/>
-          }
-          {if room.raised
-            <FontAwesomeIcon aria-label={label} icon={faHandPaper}
-            onClick={toggleHand}/>
-          else
-            <FontAwesomeIcon aria-label={label} icon={faHandPaperOutline}
-            onClick={toggleHand}/>
-          }
-        </div>
-      </OverlayTrigger>
+          updator: getCreator()
+      <div className="raise-hand #{if room.raised then 'active' else ''}">
+        <OverlayTrigger placement="top" overlay={(props) ->
+          <Tooltip {...props}>{help}</Tooltip>
+        }>
+          <FontAwesomeIcon aria-label={label} icon={faHandPaper}
+           onClick={toggleHand}/>
+        </OverlayTrigger>
+        {if room.raised and typeof room.raised != 'boolean'
+          <RaisedTimer raised={room.raised}/>
+        }
+      </div>
     }
-    {if adminVisit and room.adminVisit instanceof Date
-      <OverlayTrigger placement="top" overlay={(props) ->
-        <Tooltip {...props}>
-          Time since room last visited by admin or room became nonempty
-        </Tooltip>
-      }>
-        <div className="adminVisit">
-          <Timer since={room.adminVisit}/>
-          <FontAwesomeIcon icon={faHourglass} className="ml-1"/>
-        </div>
-      </OverlayTrigger>
+    <Highlight className="title" style={{color: room.tags?.color ? 'inherit'}} text={(if room.tags?.pinned? then '📌 ' else '') + room.title} search={search}/>
+    {if room.tags?.subtitle
+        <Highlight className="title subtitle" style={{color: room.tags?.color ? 'inherit'}} text={room.tags.subtitle} search={search}/>
     }
-    <Highlight className="room-title" text={room.title} search={search}/>
-    <PresenceList presenceClusters={
-      if search  # show matching starred people too
-        (presenceClusters.joined ? []).concat (person \
-          for person in (presenceClusters.starred ? []) when person.item.match)
-      else
-        presenceClusters.joined
-    } search={search}/>
+    <PresenceList clusters={clusters} search={search} filter={(person) ->
+      person.item.type == 'visible' or person.item.match # or person.name == myPresence?.name
+    }/>
     {if selected
       <ButtonGroup vertical className="mx-n2 mt-2 d-block">
-        {if myPresence.joined
-          <>
-            <Button variant="danger" onClick={onLeave}>
-              <small className="mr-1"><FontAwesomeIcon icon={faTimes}/></small>
-              Leave Room
-              <div className="small">
-                <b>Leaves</b> current call
-              </div>
-            </Button>
-            <Button variant="primary" onClick={onSplit}>
-              <small className="mr-1"><FontAwesomeIcon icon={faClone}/></small>
-              Split Room
-              <div className="small">
-                <b>Duplicate</b> this room (forking discussion)
-              </div>
-            </Button>
-          </>
-        else
+        {unless myPresence?.type == 'visible'
           <Button variant="warning" onClick={onClick true}>
             <small className="mr-1"><FontAwesomeIcon icon={faDoorOpen}/></small>
-            Switch to Room
-            <div className="small">
-              <b>Leaves</b> current call
-            </div>
+            Switch to Room<br/>
+            <small><b>Leaves</b> current call</small>
           </Button>
         }
-        {if room.archived
-          <Button variant="success" onClick={onArchive}>
-            <small className="mr-1"><FontAwesomeIcon icon={faTrashRestore}/></small>
-            Unarchive Room
-            {### <div className="small"><b>Restores</b> to available room list</div> ###}
+        {if myPresence
+          <Button variant="danger" onClick={onLeave}>
+            <small className="mr-1"><FontAwesomeIcon icon={faTimes}/></small>
+            Leave Room<br/>
+            {if myPresence.type == 'visible'
+              <small><b>Leaves</b> current call</small>
+            else
+              <small>Close background room</small>
+            }
           </Button>
-        else if admin
-          <Button variant="danger" onClick={onArchive}>
-            <small className="mr-1"><FontAwesomeIcon icon={faTrash}/></small>
-            Archive Room
-            {### <div className="small"><b>Hides</b> from available room list</div> ###}
+        else if not Config.singleRoom
+          <Button variant="secondary" onClick={onClick false} className="px-1">
+            Join in Background<br/>
+            <small><b>Stays</b> in current room</small>
+          </Button>
+        }
+        {if not room.tags?.protected and myPresence?.type == 'visible'
+          <Button variant="primary" onClick={onSplit}>
+            <small className="mr-1"><FontAwesomeIcon icon={faClone}/></small>
+            Split Room<br/>
+            <small><b>Duplicate</b> this room (forking discussion)</small>
           </Button>
         }
       </ButtonGroup>
@@ -569,107 +485,60 @@ export RoomInfo = React.memo ({room, search, presence, selected, selectRoom, lea
   </Link>
 RoomInfo.displayName = 'RoomInfo'
 
-presencePhrasing =
-  starred:
-    variant: 'secondary'
-    singular: 'person starred this room'
-    plural: 'people starred this room'
-  joined:
-    variant: 'primary'
-    singular: 'person in this room'
-    plural: 'people in this room'
-
-export PresenceCount = React.memo ({type, presenceClusters, heading, children, onClick}) ->
-  phrasing = presencePhrasing[type]
-  presenceClusters ?= []
-  <OverlayTrigger placement="top" overlay={(props) -> # eslint-disable-line react/display-name
-    <Tooltip {...props}>
-      {heading}
-      {<br/> if heading}
-      {presenceClusters.length} {if presenceClusters.length == 1 then phrasing.singular else phrasing.plural}{':' if presenceClusters.length}
-      <PresenceList presenceClusters={presenceClusters}/>
-    </Tooltip>
-  }>
-    <span className="presence-#{type}" onClick={onClick}
-     aria-label="#{presenceClusters.length} #{if presenceClusters.length == 1 then phrasing.singular else phrasing.plural}">
-      {presenceClusters.length or null}
-      {children}
-    </span>
-  </OverlayTrigger>
-PresenceCount.displayName = 'PresenceCount'
-
-export PresenceList = React.memo ({presenceClusters, search}) ->
-  return null unless presenceClusters?.length
-  <div className="presence">
-    {for person in presenceClusters
-      <React.Fragment key="#{person.item.type}:#{person.item.id}">
-        <span className="presence-#{person.item.type} #{if person.item.admin then 'admin' else ''}">
-          {switch person.item.type
-            when 'joined'
-              if person.item.admin
-                <FontAwesomeIcon icon={faUserTie}/>
-              else
-                <FontAwesomeIcon icon={faUser}/>
-            when 'starred'
-              <FontAwesomeIcon icon={faStar}/>
-          }
-          &nbsp;
-          <Highlight search={search} text={person.name}/>
-          {if person.count > 1
-            <span className="ml-1 badge badge-secondary">{person.count}</span>
-          }
-        </span>
-        {' '}
-      </React.Fragment>
-    }
-  </div>
-PresenceList.displayName = 'PresenceList'
-
-export Timer = React.memo ({since}) ->
+export RaisedTimer = ({raised}) ->
   recomputeTimer = ->
-    delta = timesync.offset + (new Date).getTime() - since
+    delta = timesync.offset + (new Date).getTime() - raised
     delta = 0 if delta < 0
-    if delta <= (99*60 + 59) * 1000
+    if delta <= 5 * 60*60 * 1000
       formatTimeDelta delta
     else
-      '>99m'
+      '>5hr'
   [timer, setTimer] = useState recomputeTimer
+  [timerHeight, setTimerHeight] = useState 0
+  timerRef = useRef()
   useInterval ->
     setTimer recomputeTimer()
   , 1000
+  useEffect ->
+    return unless timerRef.current
+    setTimerHeight(timerRef.current.clientWidth)
+  , [timer]
 
-  <span className="timer">
-    {timer}
-  </span>
-Timer.displayName = 'Timer'
+  <div style={{height: timerHeight}}>
+    <div className="timer" ref={timerRef}>
+      {timer}
+    </div>
+  </div>
+RaisedTimer.displayName = 'RaisedTimer'
 
-export RoomNew = React.memo ({selectRoom}) ->
+export RoomNew = ({selectRoom}) ->
   {meetingId} = useParams()
   [title, setTitle] = useState ''
   {openRoom} = useContext MeetingContext
-  submit = (e, template = 'jitsi') ->
+  submit = (e, template) ->
     e.preventDefault?()
     return unless title.trim().length
+    {shiftKey, ctrlKey, metaKey} = e
     room =
       meeting: meetingId
       title: title.trim()
-      updator: getUpdator()
-      tabs:
-        for type in template.split '+' when type  # skip blank
-          {type}
+      creator: getCreator()
+      template: template ? 'jitsi'
     setTitle ''
-    room = await meteorCallPromise 'roomNew', room
-    if e.shiftKey or e.ctrlKey or e.metaKey
-      openRoom room._id
+    roomId = await roomWithTemplate room
+    if shiftKey
+      openRoom roomId, true
+      selectRoom null
+    else if ctrlKey or metaKey
+      openRoom roomId, false
       selectRoom null
     else
-      selectRoom room._id, true
+      selectRoom roomId, true
   ## We need to manually capture Enter so that e.g. Ctrl-Enter works.
   ## This has the added benefit of getting modifiers' state.
   onKeyDown = (e) ->
     if e.key == 'Enter'
       submit e
-
   <form onSubmit={submit}>
     <input type="text" placeholder="Title" className="form-control"
      value={title} onChange={(e) -> setTitle e.target.value}

@@ -1,15 +1,16 @@
 # Installing a Comingle Server
 
-These instructions are based on the more complicated
-[installation instructions for Coauthor](https://github.com/edemaine/coauthor/blob/main/INSTALL.md).
+These instructions on based on the more complicated
+[installation instructions for Coauthor](https://github.com/edemaine/coauthor/blob/master/INSTALL.md).
 
 ## Test Server
 
 Here is how to get a **local test server** running:
 
-1. **[Install Meteor](https://docs.meteor.com/install.html):**
-   `npm install -g meteor` or `sudo npm install -g meteor --unsafe-perm`.
-   Prefix with `arch -x86_64` on Apple M1.
+1. **[Install Meteor](https://www.meteor.com/install):**
+   `curl https://install.meteor.com/ | sh` on UNIX,
+   `choco install meteor` on Windows (in administrator command prompt
+   after [installing Chocolatey](https://chocolatey.org/install))
 2. **Download Comingle:** `git clone https://github.com/edemaine/comingle.git`
 3. **Run meteor:**
    * `cd comingle`
@@ -28,14 +29,11 @@ Installation instructions:
 1. Install Meteor and download Comingle as above.
 2. Install `mup` via `npm install -g mup`
    (after installing [Node](https://nodejs.org/en/) and thus NPM).
-3. Copy `settings.json` to `.deploy/settings.json` and optionally edit
-   [to add Zoom web client support](#zoom-support) and/or
-   [APM](#application-performance-management-apm).
-4. Edit `.deploy/mup.js` to point to your SSH key (for accessing the server),
+3. Edit `.deploy/mup.js` to point to your SSH key (for accessing the server),
    and your SSL certificate (for an https server).
-5. `cd .deploy`
-6. `mup setup` to install all necessary software on the server
-7. `mup deploy` each time you want to deploy code to server
+4. `cd .deploy`
+5. `mup setup` to install all necessary software on the server
+6. `mup deploy` each time you want to deploy code to server
    (initially and after each `git pull`)
 
 ## Configuration
@@ -43,7 +41,7 @@ Installation instructions:
 [`Config.coffee`](Config.coffee) stores a few configuration options defining
 Comingle's behavior:
 
-* `newMeetingRooms` specifies rooms (including their titles and initial tabs)
+* `newMeetingRooms` specifies rooms (including titles and templates)
   to automatically create in any newly created meeting.
 * `defaultServers` specifies the default servers for Cocreate and Jitsi.
 
@@ -52,10 +50,10 @@ Comingle's behavior:
 To use the [Zoom Web Client SDK](https://github.com/zoom/sample-app-web),
 you need to sign up for an API Key &amp; Secret.  Go to the
 [Zoom Marketplace](https://marketplace.zoom.us/) and select "Create a JWT App".
-See <https://marketplace.zoom.us/docs/sdk/native-sdks/web/getting-started/integrate>
+See https://marketplace.zoom.us/docs/sdk/native-sdks/web/getting-started/integrate
 
-Then add the API Key &amp; Secret into `.deploy/settings.json`.
-It should look something like this:
+Then add the API Key &amp; Secret into [`settings.json`](settings.json)
+at the root of this repository.  It should look something like this:
 
 ```json
 {
@@ -66,16 +64,19 @@ It should look something like this:
 }
 ```
 
-DO NOT commit your changes into Git; the secret needs to STAY SECRET.
-Thus we recommend copying [root `settings.json`](settings.json) file
-into `.deploy` and editing the copy only.
+DO NOT commit your changes to this file into Git; the secret needs to
+STAY SECRET.  To ensure Git doesn't accidentally commit your changes, use
+
+```
+git update-index --assume-unchanged settings.json
+```
 
 If you're deploying a public server via `mup`, it should pick up these keys.
 If you're developing on a local test server, use the following instead of
 `meteor`:
 
-```sh
-meteor --settings .deploy/settings.json
+```
+meteor --settings settings.json
 ```
 
 ## Application Performance Management (APM)
@@ -90,7 +91,7 @@ To monitor server performance, you can use one of the following:
   [kadira-compose](https://github.com/edemaine/kadira-compose).
 
 After creating an application on one of the servers above,
-edit `.deploy/settings.json` to look like the following
+edit `settings.json` to look like the following
 (omit `endpoint` if you're using Monti):
 
 ```json
@@ -103,7 +104,7 @@ edit `.deploy/settings.json` to look like the following
 }
 ```
 
-If you want Zoom support and APM, `.deploy/settings.json` should look like this
+If you want Zoom support and APM, `settings.json` should look like this
 (omit `endpoint` if you're using Monti):
 
 ```json

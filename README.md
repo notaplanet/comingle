@@ -9,7 +9,8 @@ with the following key features:
   creating and jumping between **rooms** (something like physical tables).
   To facilitate e.g. deciding which room to go into:
   * Everyone can see who is in what room
-  * Users can star rooms to (publicly) indicate their interest in topics
+  * Users can indicate their interest in multiple rooms
+    by "joining" rooms in the background
 * Rooms have **state**, such as whiteboard, chat messages,
   or key web pages being discussed.
   * Anyone joining late instantly has access to this state,
@@ -44,12 +45,4 @@ with the following key features:
   to supported apps (Cocreate and Coauthor).
 * Instantly create a new meeting and share the URL to meet with others.
   **No accounts required**.
-* Automatic **logs** of user actions (accessible only to admins) that enables
-  [attendance tracking](https://github.com/edemaine/comingle-attendance).
-* [**API**](https://github.com/edemaine/comingle/blob/main/doc/api.md)
-  for querying and manipulating Comingle meetings, rooms, tabs, and logs
-  from your own software.
 * **Free/open source** ([MIT license](LICENSE))
-
-To see what's changed in Comingle recently, check out the
-[Changelog](CHANGELOG.md).

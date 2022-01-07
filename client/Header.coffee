@@ -1,35 +1,18 @@
 import React from 'react'
-import {Tooltip, OverlayTrigger} from 'react-bootstrap'
 
-import {useMeetingTitle} from './MeetingTitle'
-
-export Header = React.memo ->
-  title = useMeetingTitle()
+export Header = ->
   <nav>
-    <OverlayTrigger placement="bottom" overlay={(props) ->
-      <Tooltip {...props}>Comingle</Tooltip>
-    }>
-      <LinkToFrontPage className="flex-shrink-1 mr-1" style={maxWidth:"30px"}>
-        <img src="/comingle.svg" className="w-100"/>
-      </LinkToFrontPage>
-    </OverlayTrigger>
-    <OverlayTrigger placement="bottom" overlay={(props) ->
-      <Tooltip {...props}>
-        Meeting title
-        <div className="small">
-          (change in Settings)
-        </div>
-      </Tooltip>
-    }>
-      <div className="text-center text-break">
-        {title or 'Comingle'}
-      </div>
-    </OverlayTrigger>
+    <LinkToFrontPage className="flex-shrink-1" style={maxWidth:"35px"}>
+      <img src="/comingle.svg" className="w-100"/>
+    </LinkToFrontPage>
+    <LinkToFrontPage className="navbar-brand ml-1 mr-0 mb-0 h1">
+      Comingle
+    </LinkToFrontPage>
   </nav>
 Header.displayName = 'Header'
 
-export LinkToFrontPage = React.memo (props) ->
-  <a href={Meteor.absoluteUrl()} target="_blank" {...props}> {### eslint-disable-line coffee/jsx-no-target-blank ###}
+export LinkToFrontPage = (props) ->
+  <a href={Meteor.absoluteUrl()} target="_blank" {...props}> {### eslint-disable-line react/jsx-no-target-blank ###}
     {props.children}
   </a>
 LinkToFrontPage.displayName = 'LinkToFrontPage'

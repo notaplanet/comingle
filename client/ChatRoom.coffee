@@ -1,19 +1,20 @@
-import React, {useEffect, useLayoutEffect, useRef, useState} from 'react'
+import React, {useState, useEffect, useLayoutEffect, useRef} from 'react'
 import {Alert, Badge, Button, Form, InputGroup, Tooltip, OverlayTrigger} from 'react-bootstrap'
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
 import {faComment} from '@fortawesome/free-solid-svg-icons'
 import {useTracker} from 'meteor/react-meteor-data'
-import {Session} from 'meteor/session'
-import ScrollableFeed from 'react-scrollable-feed'
 
 import {Loading} from './Loading'
 import {Markdown} from './lib/Markdown'
 import {Chat, useChat} from './lib/chat'
-import {getUpdator} from './lib/presenceId'
+import {getCreator} from './lib/presenceId'
 import {formatDate, formatTime} from './lib/dates'
 import {useLocalStorage} from './lib/useLocalStorage'
 
 export ChatRoom = ({channel, audience, visible, extraData, updateTab}) ->
+  if ///^https:// ///.test channel
+    return <iframe src={channel} allow="camera;microphone;geolocation;midi;encrypted-media;clipboard-write"></iframe>
+
   loading = useChat channel
   messages = useTracker ->
     Chat.find
@@ -24,7 +25,7 @@ export ChatRoom = ({channel, audience, visible, extraData, updateTab}) ->
   , [channel]
 
   ## Maintain last seen message and unseen count
-  [seen, setSeen] = useLocalStorage "chatSeen-#{channel}", null, sync: true
+  [seen, setSeen] = useLocalStorage "chatSeen-#{channel}", null, true
   [loadedSeen, setLoadedSeen] = useState()
   useLayoutEffect ->
     setSeen messages[messages.length-1]?._id if visible
@@ -45,6 +46,16 @@ export ChatRoom = ({channel, audience, visible, extraData, updateTab}) ->
     undefined
   , [messages, seen]
 
+  ## Keep chat scrolled to bottom unless user modifies scroll position.
+  messagesDiv = useRef()
+  if elt = messagesDiv.current
+    atBottom = (elt.scrollHeight - elt.scrollTop - elt.clientHeight <= 3)
+  useEffect ->
+    if atBottom
+      ## Setting scrollTop to too-large value pushes us to the bottom.
+      messagesDiv.current?.scrollTop = messagesDiv.current.scrollHeight
+    undefined
+
   ## Form
   [body, setBody] = useState ''
   submit = (e) ->
@@ -52,23 +63,14 @@ export ChatRoom = ({channel, audience, visible, extraData, updateTab}) ->
     return unless body.trim()
     Meteor.call 'chatSend',
       channel: channel
-      sender: getUpdator()
+      sender: getCreator()
       type: 'msg'
       body: body
     setBody ''
 
-  ## Scroll to bottom when TeX loads
-  scrollableRef = useRef()
-  texLoaded = useTracker ->
-    Session.get 'texLoaded'
-  , []
-  useEffect ->
-    scrollableRef.current?.scrollToBottom()
-  , [texLoaded]
-
   return null unless visible
   <div className="chat">
-    <ScrollableFeed className="messages" ref={scrollableRef}>
+    <div className="messages" ref={messagesDiv}>
       {for message in messages
         date = formatDate message.sent
         <React.Fragment key={message._id}>
@@ -94,7 +96,7 @@ export ChatRoom = ({channel, audience, visible, extraData, updateTab}) ->
           Empty chat. Post the first message below!
         </Alert>
       }
-    </ScrollableFeed>
+    </div>
     <Form onSubmit={submit}>
       <InputGroup>
         <Form.Control type="text" placeholder="Message #{audience}"
@@ -110,7 +112,7 @@ export ChatRoom = ({channel, audience, visible, extraData, updateTab}) ->
   </div>
 
 ChatRoom.onRenderTab = (node, renderState) ->
-  if (unseen = node.getExtraData().unseen)
+  if unseen = node.getExtraData().unseen
     if node.getExtraData().fresh
       variant = 'danger'
     else

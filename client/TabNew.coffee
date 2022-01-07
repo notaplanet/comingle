@@ -1,10 +1,9 @@
-import React, {useState, useEffect, useLayoutEffect, useRef} from 'react'
+import React, {useState, useEffect, useRef} from 'react'
 import {Alert, Button, Card, Form, Nav} from 'react-bootstrap'
 
-import {addMeetingSecret} from './MeetingSecret'
 import {validURL, tabTypes, categories, mangleTab, zoomRegExp} from '/lib/tabs'
 import {useDebounce} from './lib/useDebounce'
-import {getUpdator} from './lib/presenceId'
+import {getCreator} from './lib/presenceId'
 import {capitalize} from './lib/capitalize'
 
 export tabTypePage =
@@ -12,8 +11,14 @@ export tabTypePage =
     topDescription: <p>Paste the URL for any embeddable website, e.g., Wikipedia:</p>
   cocreate:
     topDescription: <p>This server uses <a className="font-weight-bold" href="https://github.com/edemaine/cocreate">Cocreate</a> for a shared whiteboard.</p>
+  discord:
+    topDescription: <p>Add a link to a Discord server here (you'll need an embedding service like <a href="https://titanembeds.com/">Titan</a>).</p>
   jitsi:
     topDescription: <p>This server recommends <a className="font-weight-bold" href="https://meet.jit.si/">Jitsi Meet</a> for video conferencing, because it allows free creation of unlimited rooms.</p>
+  puzzle:
+    topDescription: <p>Add a link to the puzzle here.</p>
+  spreadsheet:
+    topDescription: <p>Add a link to a spreadsheet (for working on a puzzle) here.</p>
   youtube:
     topDescription: <p>Paste a <a className="font-weight-bold" href="https://www.youtube.com/">YouTube</a> link and we'll turn it into its embeddable form:</p>
   zoom:
@@ -22,20 +27,16 @@ export tabTypePage =
     bottomDescription:
       <p>Or paste a Zoom invitation link:</p>
 
-tabCategory = (tabData) -> tabData.category ? tabData.title
-
 tabTypesByCategory = {}
 do -> # avoid namespace pollution
   for tabType, tabData of tabTypes
-    category = tabCategory tabData
+    category = tabData.category ? tabData.title
     tabTypesByCategory[category] ?= {}
     tabTypesByCategory[category][tabType] = tabData
 
-export TabNew = React.memo ({initialUrl, node, meetingId, roomId, replaceTabNew, existingTabTypes}) ->
-  [url, setUrl] = useState initialUrl ? ''
-  useLayoutEffect ->
-    setUrl initialUrl if initialUrl? and not url
-  , [initialUrl]
+export TabNew = ({node, meetingId, roomId,
+                  replaceTabNew, existingTabTypes}) ->
+  [url, setUrl] = useState ''
   [mixed, setMixed] = useState false
   [title, setTitle] = useState ''
   [category, setCategory] = useState 'Web'
@@ -68,9 +69,7 @@ export TabNew = React.memo ({initialUrl, node, meetingId, roomId, replaceTabNew,
     tab = mangleTab {url, title, type, manualTitle}
     setUrl tab.url if tab.url != url
     setTitle tab.title if tab.title != title
-    if tab.type != type
-      setType tab.type
-      setCategory tabCategory tabTypes[tab.type]
+    setType tab.type if tab.type != type
     setManualTitle tab.manualTitle if tab.manualTitle != manualTitle
     setMixed window.location.protocol == 'https:' and /^http:\/\//i.test tab.url
     if submit
@@ -100,13 +99,10 @@ export TabNew = React.memo ({initialUrl, node, meetingId, roomId, replaceTabNew,
       type: type
       url: url
       manualTitle: manualTitle
-      updator: getUpdator()
+      creator: getCreator()
     , true
-    tab = await Meteor.apply 'tabNew', [addMeetingSecret meetingId, tab],
-      returnStubValue: true
-    replaceTabNew
-      id: tab._id
-      node: node
+    id = Meteor.apply 'tabNew', [tab], returnStubValue: true
+    replaceTabNew {id, node}
   <Card>
     <Card.Body>
       <Card.Title as="h3">Add Shared Tab to Room</Card.Title>
@@ -116,7 +112,7 @@ export TabNew = React.memo ({initialUrl, node, meetingId, roomId, replaceTabNew,
       <Card className="form-group">
         <Card.Header>
           <Nav variant="tabs">
-            {for categoryName of tabTypesByCategory
+            {for categoryName, categoryTabTypes of tabTypesByCategory
               selected = (category == categoryName)
               <li key={categoryName} className="nav-item" role="presentation">
                 <a className="nav-link #{if selected then 'active'}"

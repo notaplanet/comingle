@@ -1,60 +1,83 @@
-import React from 'react'
-import {useParams} from 'react-router-dom'
+import React, {useLayoutEffect} from 'react'
 import {Card, Form} from 'react-bootstrap'
+import {Session} from 'meteor/session'
+import {useTracker} from 'meteor/react-meteor-data'
+import {Config} from '/Config'
 
-import {LocalStorageVar, StorageDict} from './lib/useLocalStorage'
-import {MeetingTitle} from './MeetingTitle'
-import {MeetingSecret, useMeetingAdmin} from './MeetingSecret'
+import {useLocalStorage, getLocalStorage} from './lib/useLocalStorage'
 
-export Settings = React.memo ->
-  admin = useMeetingAdmin()
-  <>
-    <Card>
-      <Card.Body>
-        <Card.Title as="h3">Settings</Card.Title>
-        <Form>
-          <Dark/>
-        </Form>
-      </Card.Body>
-    </Card>
-    <div className="sidebar">
-      <MeetingTitle/>
-      <MeetingSecret/>
-    </div>
-    {if admin
-      <Card>
-        <Card.Body>
-          <Card.Title as="h3">Admin</Card.Title>
-          <Form>
-            <AdminVisit/>
-          </Form>
-        </Card.Body>
-      </Card>
-    }
-  </>
+export Settings = ->
+  <Card>
+    <Card.Body>
+      <Card.Title as="h3">Settings</Card.Title>
+      <Form>
+        <Dark/>
+        <Compact/>
+        <Createable/>
+      </Form>
+    </Card.Body>
+  </Card>
 Settings.displayName = 'Settings'
 
-darkVar = new LocalStorageVar 'dark', ->
-  window.matchMedia('(prefers-color-scheme: dark)').matches
-, sync: true
-export useDark = -> darkVar.use()
-export getDark = -> darkVar.get()
+export Dark = ->
+  [dark, setDark] = useLocalStorage 'dark', preferDark, true
+  useLayoutEffect ->
+    Session.set 'dark', dark
+    undefined
+  , [dark]
 
-export Dark = React.memo ->
-  dark = useDark()
   <Form.Switch id="dark" label="Dark Mode" checked={dark}
-   onChange={(e) -> darkVar.set e.target.checked}/>
+   onChange={(e) -> setDark e.target.checked}/>
 Dark.displayName = 'Dark'
 
-adminVisitVars = new StorageDict LocalStorageVar,
-  'adminVisit', false, sync: true
-export useAdminVisit = ->
-  {meetingId} = useParams()
-  adminVisitVars.get(meetingId)?.use()
+export useDark = ->
+  [dark] = useLocalStorage 'dark', preferDark, true
+  useTracker -> Session.get('dark') ? dark
 
-export AdminVisit = React.memo ->
-  {meetingId} = useParams()
-  adminVisit = useAdminVisit()
-  <Form.Switch id="adminVisit" label="Show timer since last admin visit" checked={adminVisit}
-   onChange={(e) -> adminVisitVars.get(meetingId).set e.target.checked}/>
-AdminVisit.displayName = 'AdminVisit'
+export getDark = ->
+  Session.get('dark') ? getLocalStorage 'dark', preferDark
+
+preferDark = ->
+  window.matchMedia('(prefers-color-scheme: dark)').matches
+
+export Compact = ->
+  [compact, setCompact] = useLocalStorage 'compact', preferCompact, true
+  useLayoutEffect ->
+    Session.set 'compact', compact
+    undefined
+  , [compact]
+
+  <Form.Switch id="compact" label="Compact Mode" checked={compact}
+   onChange={(e) -> setCompact e.target.checked}/>
+Compact.displayName = 'Compact'
+
+export useCompact = ->
+  [compact] = useLocalStorage 'compact', preferCompact, true
+  useTracker -> Session.get('compact') ? compact
+
+export getCompact = ->
+  Session.get('compact') ? getLocalStorage 'compact', preferCompact
+
+preferCompact = ->
+  Config.preferCompact
+
+export Createable = ->
+  [createable, setCreateable] = useLocalStorage 'createable', preferCreateable, true
+  useLayoutEffect ->
+    Session.set 'createable', createable
+    undefined
+  , [createable]
+
+  <Form.Switch id="createable" label="Show Create Room widget" checked={createable}
+   onChange={(e) -> setCreateable e.target.checked}/>
+Createable.displayName = 'Createable'
+
+export useCreateable = ->
+  [createable] = useLocalStorage 'createable', preferCreateable, true
+  useTracker -> Session.get('createable') ? createable
+
+export getCreateable = ->
+  Session.get('createable') ? getLocalStorage 'createable', preferCreateable
+
+preferCreateable = ->
+  not Config.hideCreate

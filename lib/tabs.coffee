@@ -1,11 +1,10 @@
 import {Mongo} from 'meteor/mongo'
 import {check, Match} from 'meteor/check'
-import {fetch} from 'meteor/fetch'
 import {Random} from 'meteor/random'
 
-import {validId, updatorPattern} from './id'
-import {checkMeeting, checkMeetingSecret} from './meetings'
-import {checkRoom, setUpdated, dateFlags} from './rooms'
+import {validId, creatorPattern} from './id'
+import {checkMeeting} from './meetings'
+import {checkRoom} from './rooms'
 import {Config} from '/Config'
 
 export Tabs = new Mongo.Collection 'tabs'
@@ -14,7 +13,7 @@ export checkTab = (tab) ->
   if validId(tab) and data = Tabs.findOne tab
     data
   else
-    throw new Meteor.Error 'checkTab.invalid', "Invalid tab ID #{tab}"
+    throw new Error "Invalid tab ID #{tab}"
 
 export validURL = (url) ->
   return false unless typeof url == 'string'
@@ -25,7 +24,7 @@ export validURL = (url) ->
     false
 export checkURL = (url) ->
   unless validURL url
-    throw new Meteor.Error 'checkURL.invalid', "Invalid URL #{url}"
+    throw new Error "Invalid URL #{url}"
   true
 export trimURL = (x) -> x.replace /\/+$/, ''
 
@@ -43,6 +42,10 @@ export tabTypes =
       response = await fetch url
       json = await response.json()
       json.url
+  discord:
+    title: 'Discord'
+    alwaysRender: true
+    onePerRoom: true
   jitsi:
     title: 'Jitsi'
     longTitle: 'Jitsi Meet'
@@ -53,7 +56,14 @@ export tabTypes =
     keepVisible: true
     createNew: ->
       server = Config.defaultServers.jitsi ? 'https://meet.jit.si'
-      "#{trimURL server}/comingle_#{Random.id()}"
+      "#{trimURL server}/comingle/#{Random.id()}"
+  puzzle: # Special type for MH
+    title: 'Puzzle'
+    alwaysRender: true
+  spreadsheet: # Special type for MH
+    title: 'Spreadsheet'
+    alwaysRender: true
+    keepVisible: true
   youtube:
     title: 'YouTube'
   zoom:
@@ -67,110 +77,51 @@ export categories =
   'Video Conference':
     onePerRoom: true
 
-tabCheckSecret = (op, tab, room, meeting) ->
-  return if Meteor.isClient
-  if op.secret
-    checkMeetingSecret (meeting ? tab?.meeting), op.secret
-    delete op.secret
-  else
-    for key in ['deleted']  # admin-only
-      if op[key]?
-        throw new Meteor.Error 'tabCheckSecret.unauthorized', "Need meeting secret to use #{key} flag"
-    room ?= checkRoom tab.room
-    if room.protected
-      throw new Meteor.Error 'tabCheckSecret.protected', "Need meeting secret to modify tab in protected room #{tab.room}"
-
 Meteor.methods
   tabNew: (tab) ->
-    check tab,
-      type: Match.Optional String  # default set via mangleTab
+    pattern =
+      type: String
       meeting: String
       room: String
-      title: Match.Optional String  # default set via mangleTab
-      url: Match.Optional Match.Where checkURL  # default set via mangleTab
-      archived: Match.Optional Boolean
-      updator: updatorPattern
-      secret: Match.Optional String
-    tab.type ?= 'iframe'  # default if mangleTab doesn't set it
+      title: String
+      protected: Match.Optional Boolean
+      keepVisible: Match.Optional Boolean
+      url: Match.Where checkURL
+      creator: creatorPattern
     unless tab.type of tabTypes
-      throw new Meteor.Error 'tabNew.invalidType', "Invalid tab type: #{tab?.type}"
-    unless @isSimulation  # avoid calling createNew() on both client and server
-      unless tab.url
-        unless tabTypes[tab.type].createNew?
-          throw new Meteor.Error 'tabNew.uncreatable', 'Tab needs to have url or creatable type'
-        tab.url = tabTypes[tab.type].createNew()
-        tab.url = await tab.url if tab.url.then?
-        check tab.url, Match.Where checkURL
-      tab = mangleTab tab, true
-      check tab.title, String
-    meeting = checkMeeting tab.meeting
+      throw new Error "Invalid tab type: #{tab?.type}"
+    #switch tab?.type
+    #  when 'iframe', 'cocreate', 'jitsi'
+    #    Object.assign pattern,
+    #      url: Match.Where checkURL
+    #  else
+    #    throw new Error "Invalid tab type: #{tab?.type}"
+    check tab, pattern
+    checkMeeting tab.meeting
     room = checkRoom tab.room
-    tabCheckSecret tab, tab, room, meeting
     if tab.meeting != room.meeting
-      throw new Meteor.Error 'tabNew.wrongMeeting', "Meeting #{tab.meeting} doesn't match room #{tab.room}'s meeting #{room.meeting}"
-    tab.creator = tab.updator
+      throw new Error "Meeting #{tab.meeting} doesn't match room #{tab.room}'s meeting #{room.meeting}"
     unless @isSimulation
-      setUpdated tab
-      tab.created = tab.updated
-    tab._id = Tabs.insert tab
-    tab
+      tab.created = new Date
+    Tabs.insert tab
   tabEdit: (diff) ->
     check diff,
       id: String
       title: Match.Optional String
       archived: Match.Optional Boolean
-      deleted: Match.Optional Boolean
-      #protected: Match.Optional Boolean
-      updator: updatorPattern
-      secret: Match.Optional String
+      updator: creatorPattern
     tab = checkTab diff.id
-    tabCheckSecret diff, tab
     set = {}
     for key, value of diff when key != 'id'
       set[key] = value unless tab[key] == value
     return unless (key for key of set).length  # nothing to update
     unless @isSimulation
-      setUpdated set
+      set.updated = new Date
+      if set.archived
+        set.archived = set.updated
+        set.archiver = set.updator
     Tabs.update diff.id,
       $set: set
-  tabGet: (query) ->
-    check query,
-      meeting: Match.Optional Match.Where validId
-      room: Match.Optional Match.Where validId
-      rooms: Match.Optional [Match.Where validId]
-      tab: Match.Optional Match.Where validId
-      tabs: Match.Optional [Match.Where validId]
-      type: Match.Optional Match.OneOf String, RegExp
-      title: Match.Optional Match.OneOf String, RegExp
-      url: Match.Optional Match.OneOf String, RegExp
-      archived: Match.Optional Boolean
-      deleted: Match.Optional Boolean
-      #protected: Match.Optional Boolean
-      secret: Match.Optional String
-    delete query[key] for key of query when not query[key]?
-    unless query.meeting? or query.room? or query.rooms? or query.tab? or query.tabs?
-      throw new Meteor.Error 'tabGet.underspecified', 'Need to specify meeting, room, rooms, tab, or tabs'
-    if query.rooms?
-      query.room = $in: query.rooms
-      delete query.rooms
-    if query.tab?
-      query._id = query.tab
-      delete query.tab
-    if query.tabs?
-      query._id = $in: query.tabs
-      delete query.tabs
-    if query.secret
-      checkMeetingSecret query.meeting, query.secret
-      delete query.secret
-    else
-      ## Only admins can see deleted tabs
-      query.deleted = false
-    for key in dateFlags
-      if query[key]
-        query[key] = $ne: null
-      else if query[key] == false
-        query[key] = null
-    Tabs.find(query).fetch()
 
 export zoomRegExp =
     ///^(https://[^/]*zoom.us/) (?: j/([0-9]*))? (?: \?pwd=(\w*))? ///
@@ -197,31 +148,14 @@ export mangleTab = (tab, dropManualTitle) ->
   tab.url = tab.url.replace ///
     ^ (?: http s? : )? //
     (?: youtu\.be/ |
-      (?: www\. | m\. )? youtube (-nocookie)? .com /  # nocookie
+      (?: www\. | m\. )? youtube (-nocookie)? .com /
         (?: v/ | vi/ | e/ | embed/ |
           (?: watch )? \? (?: feature=[^&]* & )? v i? = )
     )
-    ( [\w\-]+ )  # video
-    ( [^]* ) $   # options
-  ///i, (match, nocookie, video, options) ->
+    ( [\w\-]+ ) [^]*
+  ///i, (match, nocookie, video) ->
     tab.type = 'youtube'
-    query = []
-    if (option = /[?&#;]list=([\w\-]+)/.exec options)?
-      query.push "list=#{option[1]}"
-    ## Start timestamp: watch supports start= and t=, and times such as
-    ## 1m30s; embed supports only start= and integer times.
-    if (option = /[?&#;](?:start|t)=(\w+)/.exec options)?
-      start = 0
-      option[1].replace /([0-9]+)(s|m|h|$)/g, (part, value, unit) ->
-        start += value *
-          switch unit
-            when 's', '' then 1
-            when 'm' then 60
-            when 'h' then 60*60
-      query.push "start=#{start}"
-    query = query.join '&'
-    query = "?#{query}" if query
-    "https://www.youtube#{nocookie ? ''}.com/embed/#{video}#{query}"
+    "https://www.youtube#{nocookie ? ''}.com/embed/#{video}"
 
   ## Zoom URL detection
   if ///^https://[^/]*zoom.us/ ///.test tab.url

@@ -3,6 +3,4 @@ import {Tabs} from '/lib/tabs'
 
 Meteor.publish 'room', (roomId) ->
   checkId roomId
-  Tabs.find
-    room: roomId
-    deleted: null
+  Tabs.find room: roomId

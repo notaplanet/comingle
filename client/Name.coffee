@@ -1,37 +1,35 @@
-import React, {useLayoutEffect, useState} from 'react'
+import React, {useLayoutEffect} from 'react'
 import {Card, Form} from 'react-bootstrap'
+import {Session} from 'meteor/session'
 import {useTracker} from 'meteor/react-meteor-data'
 
-import {useMeetingAdmin} from './MeetingSecret'
-import {LocalStorageVar} from './lib/useLocalStorage'
+import {useLocalStorage, getLocalStorage} from './lib/useLocalStorage'
 import {useDebounce} from './lib/useDebounce'
 
-nameVar = new LocalStorageVar 'name', '', sync: true
-export useName = -> nameVar.use()
-export getName = -> nameVar.get()
-
-export Name = React.memo ->
-  [name, setName] = useState -> nameVar.get()
+export Name = ->
+  [name, setName] = useLocalStorage 'name', '', true
   nameDebounce = useDebounce name, 500
-  admin = useMeetingAdmin()
 
-  ## Synchronize global with form state
-  useTracker ->
-    setName nameVar.get()
-  , []
   useLayoutEffect ->
-    nameVar.set nameDebounce
+    Session.set 'name', nameDebounce
     undefined
   , [nameDebounce]
 
   <Card>
     <Card.Header className="tight">
-      Your Name:
+      Your username:
     </Card.Header>
     <Card.Body>
-      <Form.Control type="text" placeholder="FirstName LastName"
-       className="name #{if nameDebounce.trim() then '' else 'is-invalid'} #{if admin then 'admin' else ''}"
+      <Form.Control type="text" placeholder="username"
+       className="name #{if nameDebounce.trim() then '' else 'is-invalid'}"
        value={name} onChange={(e) -> setName e.target.value}/>
     </Card.Body>
   </Card>
 Name.displayName = 'Name'
+
+export useName = ->
+  [name] = useLocalStorage 'name', '', true
+  useTracker -> Session.get('name') ? name
+
+export getName = ->
+  Session.get('name') ? getLocalStorage 'name', ''

@@ -32,8 +32,6 @@ $font-size: 12px
 
 .dark .flexlayout__layout .flexlayout__layout
   @import "{}/node_modules/flexlayout-react/style/dark.scss"
-  .flexlayout__tab_button_textbox
-    color: lightgreen  // override green default for dark mode
 
 // Override button placement
 
@@ -50,19 +48,13 @@ $font-size: 12px
   .fa-clipboard-link
     font-size: 120%
     margin-top: -3.5px
-// Push all tab buttons closer together
-.flexlayout__tab_toolbar > button
-  padding: 1px 3px !important
 .flexlayout__tab_button_overflow
-  margin-left: 2px !important
+  padding-left: 4px
 
-.flexlayout__tab_toolbar, .flexlayout__tab_toolbar_sticky_buttons_container
-  button
-    color: black
-.dark
-  .flexlayout__tab_toolbar, .flexlayout__tab_toolbar_sticky_buttons_container
-    button
-      color: white !important
+.flexlayout__tab_toolbar button
+  color: black
+.dark .flexlayout__tab_toolbar button
+  color: white
 
 .flexlayout__tab_toolbar_button-fa
   background: transparent
@@ -73,6 +65,8 @@ $font-size: 12px
   outline-width: 0
 
 .flexlayout__tab_button_trailing
+  &:active
+    color: #555
   a, a:visited, a:hover
     color: inherit !important
   a
@@ -83,6 +77,3 @@ $font-size: 12px
 
 .flexlayout__border_button_trailing
   margin-left: 0.25rem  // smaller than default 8px
-
-.flexlayout__popup_menu_item
-  cursor: pointer

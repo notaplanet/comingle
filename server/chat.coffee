@@ -1,7 +1,7 @@
 import {Mongo} from 'meteor/mongo'
 import {check, Match} from 'meteor/check'
 
-import {checkId, updatorPattern} from '/lib/id'
+import {checkId, creatorPattern} from '/lib/id'
 import {ChatStream} from '/lib/chat'
 import {Meetings} from '/lib/meetings'
 import {Rooms} from '/lib/rooms'
@@ -32,11 +32,11 @@ Meteor.methods
   chatSend: (message) ->
     check message,
       channel: String
-      sender: updatorPattern
+      sender: creatorPattern
       type: 'msg'
       body: String
     message.sent = new Date
     unless Meetings.findOne(message.channel) or Rooms.findOne(message.channel)
-      throw new Meteor.Error 'chatSend.invalidChannel', "Invalid channel #{message.channel}"
+      throw new Error "Invalid channel #{message.channel}"
     message._id = Chat.insert message
     ChatStream.emit message.channel, message

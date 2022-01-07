@@ -6,10 +6,7 @@ import {Presence} from '/lib/presence'
 Meteor.publish 'meeting', (meetingId) ->
   checkId meetingId
   [
-    Meetings.find (_id: meetingId),
-      fields: secret: false
-    Rooms.find
-      meeting: meetingId
-      deleted: null
+    Meetings.find _id: meetingId
+    Rooms.find meeting: meetingId
     Presence.find meeting: meetingId
   ]

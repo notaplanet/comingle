@@ -3,37 +3,32 @@
 export Config =
 
   ## When creating a new meeting, create rooms with the specified
-  ## title and (optional) tabs.
+  ## title and template.  Template can be '' (blank), 'cocreate', 'jitsi',
+  ## or a combination via plus, e.g., 'cocreate+jitsi'.
   newMeetingRooms: [
     title: 'Main Room'
-    tabs: [
-      type: 'jitsi'
-    ]
+    template: 'jitsi'
   #,
   #  title: 'Empty Room'
-  #,
-  #  title: 'Drawing Room'
-  #  tabs: [
-  #    type: 'cocreate'
-  #  ]
-  #,
-  #  title: 'Living Room'
-  #  tabs: [
-  #    type: 'jitsi'
-  #  ,
-  #    type: 'cocreate'
-  #  ]
+  #  template: ''
   ]
 
   ## Default servers for each of the (open-source) services.
   ## If you'd rather not use/rely on a publicly deployed server,
   ## consider running your own and changing the default here.
   defaultServers:
-    cocreate: 'https://cocreate.csail.mit.edu'
+    cocreate: 'https://cocreate.mehtank.com'
     jitsi: 'https://meet.jit.si'
 
   ## Default sort key for all meetings
   defaultSort:
-    gather: ''
     key: 'title'  # see client/RoomList.coffee for other options
     reverse: false
+
+  hideWarnings: true
+  hideHeader: true
+  hideOpenRooms: true
+  defaultSwitchRoom: true
+  singleRoom: true
+  preferCompact: true
+  hideCreate: true
