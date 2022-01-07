@@ -45,14 +45,14 @@ initModel = ->
       children: [
         id: 'roomsTab'
         type: 'tab'
-        name: "Team Rooms"
+        name: "Rooms"
         component: 'RoomList'
         enableClose: false
         enableDrag: false
       ,
         id: 'chat'
         type: 'tab'
-        name: "Team Chat"
+        name: "General Chat"
         component: 'ChatRoom'
         enableClose: false
         enableDrag: false

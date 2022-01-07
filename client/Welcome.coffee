@@ -26,7 +26,7 @@ export Welcome = ->
       <h5>Getting Started:</h5>
       <ul>
         <li>First, <b>enter your username</b> in the upper left panel.</li>
-        <li>To <b>join a room</b>, click on a room (such as &ldquo;Main Room&rdquo;) in the Meeting rooms list on the left.</li>
+        <li>To <b>join a room</b>, click on a room (such as &ldquo;Main Room&rdquo;) in the Rooms list on the left.</li>
         <li>When you click a second room, you'll be offered to &ldquo;<b>Switch to Room</b>&rdquo; which leaves the current room and any video calls (shortcut: hold <kbd>Shift</kbd> while clicking).</li>
         <li>Each room contains one or more <b>tabs</b>: video call, whiteboard, etc.</li>
         <ul>
@@ -37,7 +37,7 @@ export Welcome = ->
         </ul>
         <li>You can change what is displayed:
           <ul>
-            <li><b>Toggle the rooms sidebar</b> on the left by clicking on the <b>Meeting Rooms</b> button in the upper left.</li>
+            <li><b>Toggle the rooms sidebar</b> on the left by clicking on the <b>Rooms</b> button in the upper left.</li>
             <li><b>Show only non-empty rooms</b> by checking the box under Room Search.</li>
             <li><b>Sort rooms</b>: You can sort the room lists in each section by the room name, number of participants, and more by clicking on Room Search.</li>
           </ul>
@@ -45,7 +45,7 @@ export Welcome = ->
         <li>
           <u>New for 2022</u>:
           <ul>
-            <li> <b>Room Chat</b> is available in the top right of each room. <b>Meeting Chat</b> (one for the entire site) is available on the top left. These should link to the relevant Slack channels.</li>
+            <li> <b>Room Chat</b> is available in the top right of each room. <b>General Chat</b> (one for the entire site) is available on the top left. These should link to the relevant Slack channels.</li>
             <li> <b>Raise your hand</b> by clicking on the icon on the right of the room name, to alert the team that a puzzle is stuck and needs eyes.</li>
           </ul>
         </li>
