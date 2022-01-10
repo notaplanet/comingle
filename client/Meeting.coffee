@@ -37,14 +37,14 @@ initModel = ->
       children: [
         id: 'roomsTab'
         type: 'tab'
-        name: "Meeting Rooms"
+        name: "Rooms"
         component: 'RoomList'
         enableClose: false
         enableDrag: false
       ,
         id: 'chat'
         type: 'tab'
-        name: "Meeting Chat"
+        name: "General Chat"
         component: 'ChatRoom'
         enableClose: false
         enableDrag: false
@@ -184,7 +184,7 @@ export Meeting = ->
       if location.hash
         history.replace "/m/#{meetingId}"
       Session.set 'currentRoom', undefined
-  
+
   factory = (node) -> # eslint-disable-line react/display-name
     updateTab = -> FlexLayout.updateNode model, node.getId()
     switch node.getComponent()
