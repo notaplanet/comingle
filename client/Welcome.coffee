@@ -15,11 +15,12 @@ export Welcome = ({html}) ->
         <Card.Title as="h4">Welcome to Comingle, <font size="+3">💫</font> I'm not a planet either teammate!</Card.Title>
         <p>
         <h6>Browser requirements:</h6>
-        <ul>
-          <li>Use Google Chrome</li>
-          <li>Enable third party cookies! </li>
+        <ol>
+          <li>Use <b>Google Chrome</b></li>
+          <li>Enable <a href="chrome://settings/cookies">third party cookies</a>! </li>
+          <li>To view Slack in the chat windows, install <a href="https://drive.google.com/file/d/1w1Jk_I2EVRlvwuDlsGtg_gTFadUS6aBa/view?usp=sharing">this Chrome extension</a>. (<a href="https://www.youtube.com/watch?v=vW8W19W_X0I">Instructions</a>)</li>
           <li>Message #notaplanet-help on Slack if you have any problems.</li>
-        </ul>
+        </ol>
         </p>
         <div dangerouslySetInnerHTML={{__html: html}} />
         <h5>Getting Started with <a href={homepage}>Comingle</a>:</h5>
