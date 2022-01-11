@@ -6,7 +6,7 @@ import SelectableContext from 'react-bootstrap/SelectableContext'
 import {useTracker} from 'meteor/react-meteor-data'
 import {Session} from 'meteor/session'
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faThumbtack, faDoorOpen, faUser, faHandPaper, faSortAlphaDown, faSortAlphaDownAlt, faTimes, faTimesCircle} from '@fortawesome/free-solid-svg-icons'
+import {faThumbtack, faDoorOpen, faUser, faHandPaper, faHandSparkles, faSortAlphaDown, faSortAlphaDownAlt, faTimes, faTimesCircle} from '@fortawesome/free-solid-svg-icons'
 import {faClone, faHandPaper as faHandPaperOutline} from '@fortawesome/free-regular-svg-icons'
 
 import FlexLayout from './FlexLayout'
@@ -429,17 +429,22 @@ export RoomInfo = ({room, search, presence, selected, selectRoom, leave}) ->
           id: room._id
           raised: not room.raised
           updator: getCreator()
-      <div className="raise-hand #{if room.raised then 'active' else ''}">
-        <OverlayTrigger placement="top" overlay={(props) ->
-          <Tooltip {...props}>{help}</Tooltip>
-        }>
-          <FontAwesomeIcon aria-label={label} icon={faHandPaperOutline}
-           onClick={toggleHand}/>
-        </OverlayTrigger>
-        {if room.raised and typeof room.raised != 'boolean'
-          <RaisedTimer raised={room.raised}/>
-        }
-      </div>
+      <OverlayTrigger placement="top" overlay={(props) ->
+        <Tooltip {...props}>{help}</Tooltip>
+      }>
+        <div className="raise-hand #{if room.raised then 'active' else ''}">
+          {if room.raised and typeof room.raised != 'boolean'
+            <RaisedTimer raised={room.raised}/>
+          }
+          {if room.raised
+            <FontAwesomeIcon aria-label={label} icon={faHandSparkles}
+            onClick={toggleHand}/>
+          else
+            <FontAwesomeIcon aria-label={label} icon={faHandPaperOutline}
+            onClick={toggleHand}/>
+          }
+        </div>
+      </OverlayTrigger>
     }
     <Highlight className="title" style={{color: room.tags?.color ? 'inherit'}} text={(if room.tags?.pinned? then '📌 ' else '') + room.title} search={search}/>
     {if room.tags?.subtitle
