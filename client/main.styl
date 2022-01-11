@@ -84,21 +84,19 @@ nav
   .raise-hand
     float: right
     clear: right
+    margin-left: 0.5rem
     margin-right: -0.75rem
     z-index: 1
-    opacity: 0.1
-    color: var(--success)
+    opacity: 0.4
+    color: var(--danger)
     &:hover
-      opacity: 0.25
+      opacity: 0.65
     &:active
-      opacity: 0.5
+      opacity: 0.8
     &.active
       opacity: 1.0
       &:hover
         opacity: 0.75
-      svg
-        transform: scale(1)
-        animation: pulse 2s infinite ease-in-out
     .timer
       position: absolute
       transform: rotate(90deg)

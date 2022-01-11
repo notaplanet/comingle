@@ -4,7 +4,8 @@ import {Tooltip, OverlayTrigger} from 'react-bootstrap'
 import {Session} from 'meteor/session'
 import {useTracker} from 'meteor/react-meteor-data'
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faCog, faComment, faDoorOpen, faEye, faEyeSlash, faQuestion, faSave} from '@fortawesome/free-solid-svg-icons'
+import {faCog, faComment, faTh, faEye, faEyeSlash, faQuestion, faSave} from '@fortawesome/free-solid-svg-icons'
+import {faSlackHash, faSlack} from '@fortawesome/free-brands-svg-icons'
 import {clipboardLink} from './icons/clipboardLink'
 
 import FlexLayout from './FlexLayout'
@@ -44,7 +45,7 @@ initModel = ->
       ,
         id: 'chat'
         type: 'tab'
-        name: "General Chat"
+        name: "general Chat"
         component: 'ChatRoom'
         enableClose: false
         enableDrag: false
@@ -54,6 +55,14 @@ initModel = ->
         type: 'tab'
         name: "Settings"
         component: 'Settings'
+        enableClose: false
+        enableDrag: false
+      ,
+        id: 'Welcome'
+        type: 'tab'
+        name: 'Comingle Help'
+        component: 'Welcome'
+        enableRename: false
         enableClose: false
         enableDrag: false
       ]
@@ -221,33 +230,33 @@ export Meeting = ->
   iconFactory = (node) -> # eslint-disable-line react/display-name
     <OverlayTrigger placement="bottom" overlay={tooltip node}>
       {if node.getComponent() == 'ChatRoom'
-        <FontAwesomeIcon icon={faComment}/>
+        <FontAwesomeIcon icon={faSlackHash}/>
       else if node.getComponent() == 'Settings'
         <FontAwesomeIcon icon={faCog}/>
       else if node.getComponent() == 'Welcome'
         <FontAwesomeIcon icon={faQuestion}/>
       else
-        <FontAwesomeIcon icon={faDoorOpen}/>
+        <FontAwesomeIcon icon={faTh}/>
       }
     </OverlayTrigger>
   onRenderTab = (node, renderState) ->
     type = if node.getParent().getType() == 'border' then 'border' else 'tab'
     buttons = renderState.buttons
     if node.getComponent() == 'RoomList'
-      buttons?.push \
-        <div key="link"
-         className="flexlayout__#{type}_button_trailing"
-         aria-label="Copy meeting link to clipboard"
-         onClick={-> navigator.clipboard.writeText \
-           Meteor.absoluteUrl "/m/#{meetingId}"}
-         onMouseDown={(e) -> e.stopPropagation()}
-         onTouchStart={(e) -> e.stopPropagation()}>
-          <OverlayTrigger placement="right" overlay={(props) ->
-            <Tooltip {...props}>Copy meeting link to clipboard</Tooltip>
-          }>
-            <FontAwesomeIcon icon={clipboardLink}/>
-          </OverlayTrigger>
-        </div>
+      # buttons?.push \
+        # <div key="link"
+        #  className="flexlayout__#{type}_button_trailing"
+        #  aria-label="Copy meeting link to clipboard"
+        #  onClick={-> navigator.clipboard.writeText \
+        #    Meteor.absoluteUrl "/m/#{meetingId}"}
+        #  onMouseDown={(e) -> e.stopPropagation()}
+        #  onTouchStart={(e) -> e.stopPropagation()}>
+        #   <OverlayTrigger placement="right" overlay={(props) ->
+        #     <Tooltip {...props}>Copy meeting link to clipboard</Tooltip>
+        #   }>
+        #     <FontAwesomeIcon icon={clipboardLink}/>
+        #   </OverlayTrigger>
+        # </div>
       return RoomList.onRenderTab node, renderState
     else if node.getComponent() == 'ChatRoom'
       return ChatRoom.onRenderTab node, renderState

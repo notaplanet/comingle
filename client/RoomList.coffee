@@ -7,7 +7,7 @@ import {useTracker} from 'meteor/react-meteor-data'
 import {Session} from 'meteor/session'
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
 import {faThumbtack, faDoorOpen, faUser, faHandPaper, faSortAlphaDown, faSortAlphaDownAlt, faTimes, faTimesCircle} from '@fortawesome/free-solid-svg-icons'
-import {faClone} from '@fortawesome/free-regular-svg-icons'
+import {faClone, faHandPaper as faHandPaperOutline} from '@fortawesome/free-regular-svg-icons'
 
 import FlexLayout from './FlexLayout'
 import {Rooms, roomWithTemplate, roomDuplicate} from '/lib/rooms'
@@ -96,7 +96,7 @@ export RoomList = ({loading, model, extraData, updateTab}) ->
       else
         -Infinity
   pinnedSort = (sorter) ->
-     (room) -> 
+     (room) ->
         (room.tags?.pinned or "_") + sorter(room)
   sortedRooms = useMemo ->
     sorted = sortByKey rooms[..], pinnedSort(sorters[sortKey])
@@ -211,7 +211,7 @@ export RoomList = ({loading, model, extraData, updateTab}) ->
                          (not nonempty or hasVisible(room) or selected == room._id) and
                          (Config.hideOpenRooms or not findMyPresence presenceByRoom[room._id])}/>
       {for tag in sortedHalls ? []
-        filt = (t) -> 
+        filt = (t) ->
           (room) -> not room.archived and
                     (room.tags?.hall == t) and
                     (not nonempty or hasVisible(room) or selected == room._id) and
@@ -226,7 +226,7 @@ export RoomList = ({loading, model, extraData, updateTab}) ->
                          (not nonempty or hasVisible(room) or selected == room._id) and
                          (Config.hideOpenRooms or not findMyPresence presenceByRoom[room._id])}/>
     </div>
-    {if getCreateable() 
+    {if getCreateable()
       <RoomNew selectRoom={selectRoom}/>
     }
   </div>
@@ -319,16 +319,16 @@ export RoomInfo = ({room, search, presence, selected, selectRoom, leave}) ->
     currentRoom = Session.get 'currentRoom'
     ## Toggle whether this room is selected if:
     ##   * We are in this room, or
-    ##   * We are in any other room and force is neither true nor false and 
-    ##     * Config.defaultSwitchRoom is true and Shift is pressed 
-    ##     * Config.defaultSwitchRoom is not true and no modifiers are pressed 
-    if ((currentRoom == room._id) or 
-        (currentRoom? and force != true and force != false and 
-            ((Config.defaultSwitchRoom and e.shiftKey) or 
+    ##   * We are in any other room and force is neither true nor false and
+    ##     * Config.defaultSwitchRoom is true and Shift is pressed
+    ##     * Config.defaultSwitchRoom is not true and no modifiers are pressed
+    if ((currentRoom == room._id) or
+        (currentRoom? and force != true and force != false and
+            ((Config.defaultSwitchRoom and e.shiftKey) or
             not (Config.defaultSwitchRoom or e.shiftKey or e.ctrlKey or e.metaKey))))
       if selected
-          selectRoom null 
-      else 
+          selectRoom null
+      else
           selectRoom room._id
     ## Open room as background tab (without focusing) in the following cases:
     ##   * Ctrl/Command-click => force open as background tab
@@ -336,7 +336,7 @@ export RoomInfo = ({room, search, presence, selected, selectRoom, leave}) ->
     else if e.ctrlKey or e.metaKey or force == false
       openRoom room._id, false
       selectRoom null
-    ## Otherwise open room with focus 
+    ## Otherwise open room with focus
     else
       if Config.singleRoom
           leave(currentRoom)
@@ -433,7 +433,7 @@ export RoomInfo = ({room, search, presence, selected, selectRoom, leave}) ->
         <OverlayTrigger placement="top" overlay={(props) ->
           <Tooltip {...props}>{help}</Tooltip>
         }>
-          <FontAwesomeIcon aria-label={label} icon={faHandPaper}
+          <FontAwesomeIcon aria-label={label} icon={faHandPaperOutline}
            onClick={toggleHand}/>
         </OverlayTrigger>
         {if room.raised and typeof room.raised != 'boolean'
