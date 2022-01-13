@@ -17,10 +17,10 @@ export Name = ->
 
   <Card>
     <Card.Header className="tight">
-      Your username:
+      Your name:
     </Card.Header>
     <Card.Body>
-      <Form.Control type="text" placeholder="username"
+      <Form.Control type="text" placeholder="First L. [🗻 if sherpa]"
        className="name #{if nameDebounce.trim() then '' else 'is-invalid'}"
        value={name} onChange={(e) -> setName e.target.value}/>
     </Card.Body>
