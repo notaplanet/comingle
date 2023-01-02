@@ -18,7 +18,7 @@ export Welcome = ({html}) ->
         <ol>
           <li>Use <b>Google Chrome</b></li>
           <li>Enable third party cookies (at chrome://settings/cookies). </li>
-          <li>To view Slack in the chat windows, install <a href="https://drive.google.com/file/d/1w1Jk_I2EVRlvwuDlsGtg_gTFadUS6aBa/view?usp=sharing">this Chrome extension</a>. (<a href="https://www.youtube.com/watch?v=vW8W19W_X0I">Instructions</a>)</li>
+          <li>To view Slack in the chat windows, install <a href="https://drive.google.com/file/d/1w1Jk_I2EVRlvwuDlsGtg_gTFadUS6aBa/view?usp=sharing">this Chrome extension</a>. (<a href="https://notaplanet.slack.com/archives/C0FSZ1FTM/p1672573879337759">Instructions on Slack</a>)</li>
           <li>Message #notaplanet-help on Slack if you encounter problems.</li>
         </ol>
         </p>
@@ -26,7 +26,7 @@ export Welcome = ({html}) ->
         <h5>Getting Started with <a href={homepage}>Comingle</a>:</h5>
         <span class="bg-warning">Video walkthrough <a href="https://mit.zoom.us/rec/share/Xh03s_FW_gE1hB6x4bz-D5GypY5whLYu-hjjTqWk2sWxjxhuhAdmX-ZdIo4aPu2E.vARjQQvMr3RtopWr?startTime=1642077081000"> here</a>.</span>
       <ul>
-        <li>Enter your <b>name</b> (First L.) in the upper left panel. Add a 🏔 if you want to serve as a puzzle sherpa to help newer folks.</li>
+        <li>Enter your <b>name</b> (First L.) in the upper left panel.</li>
         <li>To <b>join a room</b>, click on a room (such as &ldquo;Main Room&rdquo;) in the <FontAwesomeIcon icon={faTh}/> Rooms list on the left.</li>
         <li>Each room contains <b>tabs</b>: spreadsheet, video call, whiteboard, etc.</li>
         <ul>
@@ -50,7 +50,6 @@ export Welcome = ({html}) ->
             <li> <FontAwesomeIcon icon={faHandSparkles}/> <b>Raise your hand</b> to alert the team that a puzzle desperately needs eyes by clicking <FontAwesomeIcon icon={faHandPaperOutline}/> on the right of the room name, under <FontAwesomeIcon icon={faUser}/>.</li>
             <li> In <b>Slack</b>, reacting with the 🚨 (alert-general emoji) in a channel will echo your message to #general.</li>
             <li> <b>Jitsi</b> status will persist. If you hang up on a call (<b>you must click the X in the upper right corner after the hang up button</b>), you will not auto-join your next call. Mute settings will transfer between active calls.</li>
-            <li> 🏔 Puzzle sherpa status!</li>
             <li> <a href="https://github.com/edemaine/cocreate/">Cocreate</a> <b>whiteboards</b> in each room have been updated. See <a href="https://github.com/edemaine/cocreate/blob/main/doc/README.md">user guide</a>.</li>
           </ul>
               <p>

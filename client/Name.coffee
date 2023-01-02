@@ -20,7 +20,7 @@ export Name = ->
       Your name:
     </Card.Header>
     <Card.Body>
-      <Form.Control type="text" placeholder="First L. [🗻 if sherpa]"
+      <Form.Control type="text" placeholder="First L."
        className="name #{if nameDebounce.trim() then '' else 'is-invalid'}"
        value={name} onChange={(e) -> setName e.target.value}/>
     </Card.Body>
