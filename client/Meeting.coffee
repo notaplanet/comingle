@@ -45,7 +45,7 @@ initModel = ->
       ,
         id: 'chat'
         type: 'tab'
-        name: "general Chat"
+        name: "General Chat"
         component: 'ChatRoom'
         enableClose: false
         enableDrag: false
