@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+ <head><title>Comingle Docs</title></head>
+ <body style="font-family: sans-serif; max-width: 800px; margin: auto;">
+   <h1>NotAPlanet Browser extension</h1>
+
+<h3>Why Is This Needed?</h3>
+
+<p>Sites that require logins normally don&#39;t embed properly in Comingle frames. Unfortunately, this includes useful sites like... the Hunt site, Slack, Google Sheets, basically all the things we want to embed. This extension makes it possible. If you want even more gory details, ask me how!</p>
+
+<h3>Before Hunt: Install</h3>
+<p>We strongly recommend using Chrome. Firefox is semi-supported, but won't embed Slack at all, and has nuanced cookie settings. Other browsers are not supported.</p>
+
+
+<h4>Step one: Cookie Settings</h4>
+<p>Your browser must allow Comingle to set third party cookies. You can either do this by enabling third-party cookies globally, or - in Chrome - by adding an site-specific exception. In Firefox, we have to use the &quot;Custom&quot; privacy tier, blocking either no cookies, or only &quot;Cross-site tracking cookies&quot; (also shown below). I wasn&#39;t able to figure out a site-specific exception route.</p>
+
+<p>
+    <details>
+        <summary>Chrome</summary>
+        <img src="cookie-settings-chrome.png" width="800"/>
+    </details>
+</p>
+<p>
+    <details>
+        <summary>Firefox</summary>
+        <img src="cookie-settings-firefox.png" width="800"/>
+    </details>
+</p>
+
+<h4>Step two: Browser Extension</h4>
+<ul>
+    <li><strong><a href="https://drive.google.com/u/0/uc?id=15cqr7XBsemih8b37drZ7pS1Y6BqEXxut&amp;export=download" title="Download for Chrome">Download for Chrome</a>!</strong> (preferred)</li>
+    <li><a href="https://addons.mozilla.org/en-US/firefox/addon/allow-sso-iframes/" title="Download for Firefox">Download for Firefox</a>!
+</ul>
+
+<p>
+    <details>
+        <summary>Installation on Chrome:</summary>
+        <p>(installing a custom extension - steps 2-5 - is also demonstrated in <a href="https://www.youtube.com/watch?v=vW8W19W_X0I" title="Installing a Chrome extension directly">this YouTube video</a>)</p>
+        <ol>
+            <li>Download the zip file, unzip it as a new folder, somewhere temporary</li>
+            <li>In Chrome, go to the settings menu (three dots), then More Tools, then Extensions</li>
+            <li>Enable &quot;Developer Mode&quot; using the switch at the top-right</li>
+            <li>Click the &quot;Load unpacked&quot; button that has just appeared in the top-left</li>
+            <li>Navigate to the folder that you created in step one, and press the &quot;Select&quot; button</li>
+            <li>You should see the &quot;NotAPlanet Slack Hack&quot; extension appear.</li>
+            <li>Check that it is working by going to Comingle and confirming that you can see Slack loaded in the chat pane of one of the rooms: e.g. <a href="https://comingle.imnotapla.net/m/TpDgGpnheqYthR9sX#kPKvmC9CXhZWbECoj">Classroom</a>. It may take a while to load the first time.</li>
+        </ol>
+    </details>
+</p>
+
+<p>
+    <details>
+        <summary>Installation on Firefox:</summary>
+        <p>Easier to set up, because there is an app in the appstore, but Firefox prevents us loading Slack in a frame even with the extension in place. If using Firefox, you will have to use Slack outside the Comingle environment.</p>
+        <ol>
+            <li>Install the addon at: <a href="https://addons.mozilla.org/en-US/firefox/addon/allow-sso-iframes/">https://addons.mozilla.org/en-US/firefox/addon/allow-sso-iframes/</a> by clicking &quot;Add to Firefox&quot;</li>
+            <li>In a non-Comingle window, open a Google Sheets page and the Hunt page, to set cookies correctly</li>
+            <li>Check that it is working by going to Comingle and confirming that you can see Slack loaded in the chat pane of one of the rooms: e.g. <a href="https://comingle.imnotapla.net/m/TpDgGpnheqYthR9sX#kPKvmC9CXhZWbECoj">Classroom</a>. It may take a while to load the first time.</li>
+        </ol>
+    </details>
+</p>
+
+
+<h3>After Hunt: Uninstall!</h3>
+<p>The extension does weaken browser security to some extent. For the duration of Hunt, the risk is very low, but there's no reason to leave the extension on all year round.</p>
+
+<h3>Troubleshooting</h3>
+
+<h4>I just see a grey pane with a sad file emoji!</h4>
+<p>In some browsers, Slack uses a “service worker” to fetch pages, which bypasses the extension’s ability to mess with the page headers (at the moment). You can disable/evade this feature by opening the development console (F12, or go Menu -> More tools -> Developer tools), going to the Application tab”, choosing the “Service Workers” option in the sidebar, and checking the “Update on reload” and “Bypass for network” checkboxes. Then refresh Comingle.</p>
+<p>
+    <details>
+        <summary>Screenshot</summary>
+        <img src="developer-tools.png" width="800"/>
+    </details>
+</p>
+
+<h4>I see Slack, but it won't let me login using Google (or Apple) OAuth!</h4>
+<p>If you are logging into Slack using Google (and Apple?) as auth provider (i.e. not by email), you may find you can't log in. You should try going to the correct Slack url (<a href="https://app.slack.com/client/T0FT2B658/C0FSZ1FTM">https://app.slack.com/client/&lt;server_id&gt;/&lt;channel_id&gt;</a>) in a new tab and following your normal login flow. This should set the correct cookies, and then on refresh of Comingle, it will suddenly work. Hopefully.</p>
+
+
+<h4>It's still not working (in Firefox)</h4>
+<p>Try in Chrome!</p>
+
+<h4>It's still not working (in Chrome)</h4>
+<p>Ask the tech team for help in #notaplanet-help (but we make no promises about fixing anything complicated during Hunt!)</p>
+
+ </body>
+</html>
+
