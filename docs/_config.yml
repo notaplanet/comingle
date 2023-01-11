@@ -1,0 +1,4 @@
+# Jekyll config
+name: NotAPlanet Docs
+url: https://notaplanet.github.io
+markdown: GFM
