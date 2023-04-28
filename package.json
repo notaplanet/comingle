@@ -57,6 +57,7 @@
   },
   "devDependencies": {
     "eslint": "^7.9.0",
+    "eslint-plugin-coffee": "^0.1.15",
     "eslint-plugin-coffeescript": "^1.0.0",
     "eslint-plugin-meteor": "^7.2.0",
     "eslint-plugin-react": "^7.20.6"
